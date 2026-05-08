@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rodri Tips</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     NAV
+══════════════════════════════════════ -->
+<nav>
+  <div class="logo">
+    Rodri<span>Tips</span>
+    <span class="logo-sub">Bet Tracker</span>
+  </div>
+
+  <div class="nav-main">
+    <button class="active" onclick="goTo('dashboard',this)">Dashboard</button>
+    <button onclick="goTo('pending',this)">Pendentes</button>
+    <button onclick="goTo('analysis',this)">Análise</button>
+    <button onclick="goTo('history',this)">Histórico</button>
+  </div>
+
+  <div class="nav-right">
+    <div class="unit-display" onclick="openUnitModal()" id="unit-label" title="Clica para alterar o valor da unidade">1u = 10€</div>
+    <button class="btn-add" onclick="openModal()">+ Nova Aposta</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="ph">
+    <div class="ph-title">Dashboard</div>
+    <div class="ph-sub" id="dash-date"></div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card" style="--ca:var(--accent)">
+      <div class="stat-label">Lucro Total</div>
+      <div class="stat-value" id="s-profit">+0.00u</div>
+      <div class="stat-sub"  id="s-profit-eur">0.00€ · ROI 0%</div>
+    </div>
+    <div class="stat-card" style="--ca:var(--handball)">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value" id="s-wr">0%</div>
+      <div class="stat-sub"  id="s-record">0W / 0L / 0V</div>
+    </div>
+    <div class="stat-card" style="--ca:var(--tennis)">
+      <div class="stat-label">Total Apostas</div>
+      <div class="stat-value" id="s-total">0</div>
+      <div class="stat-sub"  id="s-pcount">0 pendentes</div>
+    </div>
+    <div class="stat-card" style="--ca:var(--mma)">
+      <div class="stat-label">Units Apostadas</div>
+      <div class="stat-value" id="s-units">0u</div>
+      <div class="stat-sub"  id="s-avg-odd">Odd média: —</div>
+    </div>
+  </div>
+
+  <div class="sport-breakdown" id="sport-breakdown"></div>
+
+  <div class="chart-wrap">
+    <div class="chart-header">
+      <div class="chart-title">Evolução Mensal</div>
+      <div class="chart-year" id="chart-year">2026</div>
+    </div>
+    <div class="month-chart" id="month-chart"></div>
+  </div>
+
+  <div class="sec-header">
+    <div class="sec-title">⏳ Apostas Pendentes</div>
+    <button class="filter-btn active" onclick="goTo('pending',null)">Ver todas →</button>
+  </div>
+  <div class="pending-grid" id="dash-pending"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PENDENTES
+══════════════════════════════════════ -->
+<div class="page" id="page-pending">
+  <div class="ph">
+    <div class="ph-title">Apostas Pendentes</div>
+    <div class="ph-sub">Partilha estas apostas — ainda há tempo de copiar! 🚀</div>
+  </div>
+
+  <div class="sport-tabs" id="pending-tabs">
+    <button class="sport-tab active" style="--tab-color:var(--accent)"   onclick="setPendingTab('all',this)">Todas <span class="tab-count" id="pt-all">0</span></button>
+    <button class="sport-tab" style="--tab-color:var(--tennis)"   onclick="setPendingTab('Tennis',this)">🎾 Ténis <span class="tab-count" id="pt-Tennis">0</span></button>
+    <button class="sport-tab" style="--tab-color:var(--handball)" onclick="setPendingTab('Handball',this)">🤾 Andebol <span class="tab-count" id="pt-Handball">0</span></button>
+    <button class="sport-tab" style="--tab-color:var(--mma)"      onclick="setPendingTab('MMA',this)">🥊 MMA <span class="tab-count" id="pt-MMA">0</span></button>
+    <button class="sport-tab" style="--tab-color:var(--football)" onclick="setPendingTab('Football',this)">⚽ Futebol <span class="tab-count" id="pt-Football">0</span></button>
+  </div>
+
+  <div class="pending-grid" id="pending-list"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ANÁLISE
+══════════════════════════════════════ -->
+<div class="page" id="page-analysis">
+  <div class="ph">
+    <div class="ph-title">Análise</div>
+    <div class="ph-sub">Lucro por jogador, equipa e lutador</div>
+  </div>
+
+  <div class="sport-tabs" id="analysis-sport-tabs">
+    <button class="sport-tab active" style="--tab-color:var(--tennis)"   onclick="setAnalysisTab('Tennis',this)">🎾 Ténis</button>
+    <button class="sport-tab"        style="--tab-color:var(--handball)" onclick="setAnalysisTab('Handball',this)">🤾 Andebol</button>
+    <button class="sport-tab"        style="--tab-color:var(--mma)"      onclick="setAnalysisTab('MMA',this)">🥊 MMA</button>
+    <button class="sport-tab"        style="--tab-color:var(--football)" onclick="setAnalysisTab('Football',this)">⚽ Futebol</button>
+  </div>
+
+  <div class="sub-tabs" id="analysis-subtabs">
+    <button class="sub-tab active" onclick="setAnalysisMode('entity',this)">👤 Jogadores / Entidades</button>
+    <button class="sub-tab"        onclick="setAnalysisMode('market',this)">📊 Mercados</button>
+    <button class="sub-tab"        onclick="setAnalysisMode('comp',this)">🏆 Competições</button>
+  </div>
+
+  <div id="analysis-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HISTÓRICO
+══════════════════════════════════════ -->
+<div class="page" id="page-history">
+  <div class="ph">
+    <div class="ph-title">Histórico</div>
+    <div class="ph-sub">Todas as apostas registadas</div>
+  </div>
+
+  <div class="sport-tabs" id="history-sport-tabs">
+    <button class="sport-tab active" style="--tab-color:var(--accent)"   onclick="setHistoryTab('all',this)">Todas</button>
+    <button class="sport-tab"        style="--tab-color:var(--tennis)"   onclick="setHistoryTab('Tennis',this)">🎾 Ténis</button>
+    <button class="sport-tab"        style="--tab-color:var(--handball)" onclick="setHistoryTab('Handball',this)">🤾 Andebol</button>
+    <button class="sport-tab"        style="--tab-color:var(--mma)"      onclick="setHistoryTab('MMA',this)">🥊 MMA</button>
+    <button class="sport-tab"        style="--tab-color:var(--football)" onclick="setHistoryTab('Football',this)">⚽ Futebol</button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="setResultFilter('all',this)">Todas</button>
+    <button class="filter-btn" onclick="setResultFilter('Win',this)">✅ Ganhou</button>
+    <button class="filter-btn" onclick="setResultFilter('Lost',this)">❌ Perdeu</button>
+    <button class="filter-btn" onclick="setResultFilter('Pending',this)">⏳ Pendente</button>
+    <button class="filter-btn" onclick="setResultFilter('Void',this)">↩️ Void</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="bet-table">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Modal.</th>
+          <th>Confronto</th>
+          <th>Aposta</th>
+          <th>Competição</th>
+          <th>Units</th>
+          <th>Odd</th>
+          <th>Resultado</th>
+          <th>Lucro (u)</th>
+          <th>€</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="bet-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<!-- ══════════════════════════════════════
+     MODAL: NOVA / EDITAR APOSTA
+══════════════════════════════════════ -->
+<div class="overlay" id="bet-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Nova Aposta</div>
+
+    <div class="form-grid">
+      <div class="fg">
+        <label>Data</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="fg">
+        <label>Modalidade</label>
+        <div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.1rem">
+          <button class="sport-sel-btn sel-Tennis"  data-sport="Tennis"   onclick="selectSport(this)">🎾 Ténis</button>
+          <button class="sport-sel-btn"             data-sport="Handball" onclick="selectSport(this)">🤾 Andebol</button>
+          <button class="sport-sel-btn"             data-sport="MMA"      onclick="selectSport(this)">🥊 MMA</button>
+          <button class="sport-sel-btn"             data-sport="Football" onclick="selectSport(this)">⚽ Futebol</button>
+        </div>
+      </div>
+
+      <div class="fg full">
+        <label>Competição</label>
+        <input type="text" id="f-comp">
+      </div>
+
+      <div class="vs-row">
+        <div class="fg">
+          <label id="lbl-p1">Jogador 1</label>
+          <input type="text" id="f-p1">
+          <div class="hint" id="hint-p1"></div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="fg">
+          <label id="lbl-p2">Jogador 2</label>
+          <input type="text" id="f-p2">
+          <div class="hint" id="hint-p2"></div>
+        </div>
+      </div>
+
+      <div class="fg full">
+        <label>Aposta / Mercado</label>
+        <input type="text" id="f-bet">
+        <div class="hint" id="hint-bet">Preenche o nome apostado e o tipo de mercado</div>
+      </div>
+
+      <div style="display:none;grid-template-columns:1fr 0.8fr;gap:0.5rem;grid-column:span 2" id="player-team-row">
+        <div class="fg">
+          <label id="lbl-player">Jogador a apostar (opcional)</label>
+          <input type="text" id="f-player">
+        </div>
+        <div class="fg">
+          <label id="lbl-pteam">Equipa do Jogador</label>
+          <input type="text" id="f-pteam">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Units apostadas</label>
+        <input type="number" id="f-units" step="0.1" min="0.1">
+      </div>
+      <div class="fg">
+        <label>Odd / Cota</label>
+        <input type="number" id="f-odds" step="0.01" min="1.01">
+      </div>
+
+      <div class="fg full">
+        <label>Resultado</label>
+        <div class="resolve-row">
+          <button class="res-opt sel" data-v="Pending" onclick="selRes(this)">⏳ Pendente</button>
+          <button class="res-opt"     data-v="Win"     onclick="selRes(this)">✅ Ganhou</button>
+          <button class="res-opt"     data-v="Lost"    onclick="selRes(this)">❌ Perdeu</button>
+          <button class="res-opt"     data-v="Void"    onclick="selRes(this)">↩️ Void</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('bet-overlay')">Cancelar</button>
+      <button class="btn-save"   onclick="saveBet()">Guardar Aposta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: UNIDADE
+══════════════════════════════════════ -->
+<div class="overlay" id="unit-overlay">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-title">Valor da Unidade</div>
+    <div class="fg">
+      <label>1 Unidade = ? euros (€)</label>
+      <input type="number" id="unit-input" min="1" step="1" placeholder="ex: 10">
+    </div>
+    <div class="unit-presets">
+      <button class="unit-preset" onclick="setUnitPreset(5)">5€</button>
+      <button class="unit-preset" onclick="setUnitPreset(10)">10€</button>
+      <button class="unit-preset" onclick="setUnitPreset(25)">25€</button>
+      <button class="unit-preset" onclick="setUnitPreset(50)">50€</button>
+      <button class="unit-preset" onclick="setUnitPreset(100)">100€</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('unit-overlay')">Cancelar</button>
+      <button class="btn-save"   onclick="saveUnit()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+
+<!-- ══════════════════════════════════════
+     FIREBASE SDKs (CDN — compat mode)
+     Não precisas de npm nem bundler!
+══════════════════════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+  // Inicializa Firebase aqui para estar disponível antes do script.js
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDB_YJBHplSpg18nEv9tMDjcZ3jP_4VlnY",
+    authDomain:        "rodri-tips.firebaseapp.com",
+    projectId:         "rodri-tips",
+    storageBucket:     "rodri-tips.firebasestorage.app",
+    messagingSenderId: "793882027792",
+    appId:             "1:793882027792:web:28fa460685b82da523a795"
+  };
+  firebase.initializeApp(firebaseConfig);
+  window.db = firebase.firestore();
+</script>
+
+<script src="js/script.js"></script>
+
+</body>
+</html>
