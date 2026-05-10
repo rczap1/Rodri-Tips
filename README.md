@@ -69,3 +69,31 @@ rodri tips/
 ---
 
 Divirta-se criando! 🎉
+
+## Design System (Paleta & Botões)
+
+Paleta de cores (definida em `css/style.css` como variáveis CSS):
+
+- `--accent`: #aaee33  (Ações primárias — verde)
+- `--tennis`: #aaee33  (Ténis)
+- `--handball`: #33bbee (Andebol)
+- `--mma`: #ee3344     (MMA)
+- `--football`: #f97316 (Futebol)
+- `--win`: #4ade80     (Ganho)
+- `--loss`: #f87171    (Perda)
+- `--pending`: #fbbf24 (Pendente)
+- `--bg`: #0a0a0f      (Background site)
+- `--surface`: #111118 (Cartões / superfícies)
+- `--text`: #eeeef8    (Texto principal)
+- `--muted`: #5a5a78   (Texto secundário)
+
+Botões — classes recomendadas:
+
+- `btn-add`: ação primária (usar para Guardar, Entrar, +Nova Aposta)
+- `btn-outline`: variante outline com borda `--accent` (usar para Criar conta / Voltar)
+- `btn-cancel` / `btn-save`: já existentes para modais
+- adicionar `full` para largura total (ex.: `class="btn-add full"`)
+
+Não uses estilos inline para cores/bordas — usa estas classes e variáveis.
+
+Se queres, faço um commit com qualquer outro botão inline que encontrares para substituí-los automaticamente.

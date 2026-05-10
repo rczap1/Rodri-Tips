@@ -32,7 +32,7 @@
     <div class="unit-display" onclick="openUnitModal()" id="unit-label" title="Clica para alterar o valor da unidade">1u = 10€</div>
     <button class="btn-add" id="btn-nova-aposta" onclick="openModal()">+ Nova Aposta</button>
     <button class="btn-add" id="btn-login" onclick="openLoginModal()" style="display:none">Login</button>
-    <button id="btn-logout" onclick="logout()" style="display:none;padding:0.5rem 1rem;background:#ef4444;color:white;border:none;border-radius:6px;cursor:pointer">Logout</button>
+    <button class="btn-add" id="btn-logout" onclick="logout()" style="display:none">Logout</button>
   </div>
 </nav>
 
@@ -147,7 +147,7 @@
       <input type="text" id="firebase-msg" placeholder="ex: Olá Mundo!">
     </div>
     
-    <button onclick="saveToFirebase()" style="width:100%;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:1rem">
+    <button class="btn-add full" onclick="saveToFirebase()">
       💾 Guardar no Firebase
     </button>
 
@@ -338,13 +338,9 @@
         <input type="password" id="login-password" placeholder="••••••••">
       </div>
 
-      <button onclick="loginUser()" style="width:100%;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem;margin-bottom:0.75rem">
-        Entrar
-      </button>
+      <button class="btn-add full" onclick="loginUser()">Entrar</button>
 
-      <button onclick="toggleSignupForm()" style="width:100%;padding:0.75rem;background:transparent;color:#10b981;border:2px solid #10b981;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem">
-        Criar conta
-      </button>
+      <button class="btn-outline full" onclick="toggleSignupForm()">Criar conta</button>
     </div>
 
     <div id="signup-form" style="display:none">
@@ -358,13 +354,9 @@
         <input type="password" id="signup-password" placeholder="••••••••">
       </div>
 
-      <button onclick="signupUser()" style="width:100%;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem;margin-bottom:0.75rem">
-        Criar conta
-      </button>
+      <button class="btn-add full" onclick="signupUser()">Criar conta</button>
 
-      <button onclick="toggleSignupForm()" style="width:100%;padding:0.75rem;background:transparent;color:#10b981;border:2px solid #10b981;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem">
-        Voltar
-      </button>
+      <button class="btn-outline full" onclick="toggleSignupForm()">Voltar</button>
     </div>
 
     <div id="login-error" style="margin-top:1rem;padding:0.75rem;background:#fee;border:1px solid #fcc;border-radius:6px;color:#c33;display:none"></div>

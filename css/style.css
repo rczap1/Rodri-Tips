@@ -155,6 +155,25 @@ nav {
 
 .btn-add:hover { opacity: 0.82; }
 
+/* full-width variant for buttons (use as class "full") */
+.btn-add.full, .btn-outline.full { display: block; width: 100%; text-align: center; }
+
+/* outline variant using primary accent */
+.btn-outline {
+  padding: 0.4rem 1.1rem;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.12s;
+}
+
+.btn-outline:hover { background: #aaee3312; }
+
 /* ── LAYOUT ── */
 main {
   max-width: 1280px;

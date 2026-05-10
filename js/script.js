@@ -602,7 +602,7 @@ function loadFirebaseMessages() {
   const container = document.getElementById('firebase-list');
   
   if (!db) {
-    container.innerHTML = '<div style="color:#ef4444">❌ Firebase não inicializado</div>';
+    container.innerHTML = '<div style="color:var(--loss)">❌ Firebase não inicializado</div>';
     return;
   }
 
@@ -620,16 +620,16 @@ function loadFirebaseMessages() {
           const data = doc.data();
           const date = data.timestamp ? data.timestamp.toDate().toLocaleString('pt-PT') : 'Sem data';
           return `
-            <div style="padding:0.75rem;background:white;border-radius:6px;border-left:4px solid #10b981">
-              <div style="font-weight:bold;color:#111">${data.texto}</div>
-              <div style="font-size:0.85rem;color:#6b7280;margin-top:0.25rem">${date}</div>
+            <div style="padding:0.75rem;background:white;border-radius:6px;border-left:4px solid var(--accent)">
+              <div style="font-weight:bold;color:var(--bg)">${data.texto}</div>
+              <div style="font-size:0.85rem;color:var(--muted2);margin-top:0.25rem">${date}</div>
             </div>
           `;
         }).join('');
       },
       (error) => {
         console.error('Erro ao carregar mensagens:', error);
-        container.innerHTML = `<div style="color:#ef4444">❌ Erro: ${error.message}</div>`;
+        container.innerHTML = `<div style="color:var(--loss)">❌ Erro: ${error.message}</div>`;
       }
     );
 }
