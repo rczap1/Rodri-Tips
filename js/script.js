@@ -622,6 +622,89 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 500);
 });
 
+// ══════════════════════════════════════════
+// AUTENTICAÇÃO (Login/Signup/Logout)
+// ══════════════════════════════════════════
+
+function toggleSignup() {
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+  loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+  signupForm.style.display = signupForm.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loginUser() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorDiv = document.getElementById('login-error');
+
+  if (!email || !password) {
+    errorDiv.textContent = '⚠️ Preenche email e password!';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    await firebase.auth().signInWithEmailAndPassword(email, password);
+    errorDiv.style.display = 'none';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    snack('✅ Login feito com sucesso!');
+  } catch (error) {
+    let msg = '❌ Erro: ';
+    if (error.code === 'auth/user-not-found') msg += 'Utilizador não encontrado';
+    else if (error.code === 'auth/wrong-password') msg += 'Password incorreta';
+    else msg += error.message;
+    
+    errorDiv.textContent = msg;
+    errorDiv.style.display = 'block';
+  }
+}
+
+async function signupUser() {
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const errorDiv = document.getElementById('login-error');
+
+  if (!email || !password) {
+    errorDiv.textContent = '⚠️ Preenche email e password!';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  if (password.length < 6) {
+    errorDiv.textContent = '⚠️ Password deve ter no mínimo 6 caracteres!';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    await firebase.auth().createUserWithEmailAndPassword(email, password);
+    errorDiv.style.display = 'none';
+    document.getElementById('signup-email').value = '';
+    document.getElementById('signup-password').value = '';
+    snack('✅ Conta criada! Estás logado.');
+    toggleSignup();
+  } catch (error) {
+    let msg = '❌ Erro: ';
+    if (error.code === 'auth/email-already-in-use') msg += 'Este email já está registado';
+    else if (error.code === 'auth/invalid-email') msg += 'Email inválido';
+    else msg += error.message;
+    
+    errorDiv.textContent = msg;
+    errorDiv.style.display = 'block';
+  }
+}
+
+async function logout() {
+  try {
+    await firebase.auth().signOut();
+    snack('👋 Logout feito!');
+  } catch (error) {
+    snack('❌ Erro ao fazer logout: ' + error.message);
+  }
+}
+
 function renderHistory() {
   let filtered = [...bets];
   if (histSport  !== 'all') filtered = filtered.filter(b => b.sport  === histSport);
