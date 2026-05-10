@@ -30,67 +30,11 @@
 
   <div class="nav-right">
     <div class="unit-display" onclick="openUnitModal()" id="unit-label" title="Clica para alterar o valor da unidade">1u = 10€</div>
-    <button class="btn-add" onclick="openModal()">+ Nova Aposta</button>
+    <button class="btn-add" id="btn-nova-aposta" onclick="openModal()">+ Nova Aposta</button>
+    <button id="btn-login" onclick="openLoginModal()" style="display:none;padding:0.5rem 1rem;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer">🔓 Login</button>
     <button id="btn-logout" onclick="logout()" style="display:none;padding:0.5rem 1rem;background:#ef4444;color:white;border:none;border-radius:6px;cursor:pointer">🚪 Logout</button>
   </div>
 </nav>
-
-<main>
-
-<!-- ══════════════════════════════════════
-     LOGIN
-══════════════════════════════════════ -->
-<div class="page active" id="page-login" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
-  <div style="background:white;padding:3rem;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:400px;width:100%">
-    <div style="text-align:center;margin-bottom:2rem">
-      <div style="font-size:3rem;margin-bottom:0.5rem">🎯</div>
-      <div style="font-size:1.8rem;font-weight:bold;color:#111">Rodri Tips</div>
-      <div style="font-size:0.9rem;color:#666;margin-top:0.5rem">Bet Tracker - Admin</div>
-    </div>
-
-    <div id="login-form">
-      <div class="fg full" style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:0.5rem;font-weight:bold;color:#333">Email</label>
-        <input type="email" id="login-email" placeholder="seu@email.com" style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;box-sizing:border-box">
-      </div>
-
-      <div class="fg full" style="margin-bottom:1.5rem">
-        <label style="display:block;margin-bottom:0.5rem;font-weight:bold;color:#333">Password</label>
-        <input type="password" id="login-password" placeholder="••••••••" style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;box-sizing:border-box">
-      </div>
-
-      <button onclick="loginUser()" style="width:100%;padding:0.75rem;background:#667eea;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem;margin-bottom:1rem">
-        🔓 Entrar
-      </button>
-
-      <button onclick="toggleSignup()" style="width:100%;padding:0.75rem;background:transparent;color:#667eea;border:2px solid #667eea;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem">
-        📝 Criar conta
-      </button>
-    </div>
-
-    <div id="signup-form" style="display:none">
-      <div class="fg full" style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:0.5rem;font-weight:bold;color:#333">Email</label>
-        <input type="email" id="signup-email" placeholder="seu@email.com" style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;box-sizing:border-box">
-      </div>
-
-      <div class="fg full" style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:0.5rem;font-weight:bold;color:#333">Password</label>
-        <input type="password" id="signup-password" placeholder="••••••••" style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;box-sizing:border-box">
-      </div>
-
-      <button onclick="signupUser()" style="width:100%;padding:0.75rem;background:#667eea;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem;margin-bottom:1rem">
-        ✅ Criar conta
-      </button>
-
-      <button onclick="toggleSignup()" style="width:100%;padding:0.75rem;background:transparent;color:#667eea;border:2px solid #667eea;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem">
-        ← Voltar
-      </button>
-    </div>
-
-    <div id="login-error" style="margin-top:1rem;padding:0.75rem;background:#fee;border:1px solid #fcc;border-radius:6px;color:#c33;display:none"></div>
-  </div>
-</div>
 
 <main>
 
@@ -377,6 +321,63 @@
 <div class="snackbar" id="snackbar"></div>
 
 <!-- ══════════════════════════════════════
+     MODAL: LOGIN
+══════════════════════════════════════ -->
+<div class="overlay" id="login-overlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Rodri Tips - Login</div>
+
+    <div id="login-form">
+      <div class="fg full" style="margin-bottom:1rem">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="seu@email.com">
+      </div>
+
+      <div class="fg full" style="margin-bottom:1.5rem">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••">
+      </div>
+
+      <button onclick="loginUser()" style="width:100%;padding:0.75rem;background:#667eea;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem;margin-bottom:0.75rem">
+        🔓 Entrar
+      </button>
+
+      <button onclick="toggleSignupForm()" style="width:100%;padding:0.75rem;background:transparent;color:#667eea;border:2px solid #667eea;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem">
+        📝 Criar conta
+      </button>
+    </div>
+
+    <div id="signup-form" style="display:none">
+      <div class="fg full" style="margin-bottom:1rem">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="seu@email.com">
+      </div>
+
+      <div class="fg full" style="margin-bottom:1.5rem">
+        <label>Password</label>
+        <input type="password" id="signup-password" placeholder="••••••••">
+      </div>
+
+      <button onclick="signupUser()" style="width:100%;padding:0.75rem;background:#667eea;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem;margin-bottom:0.75rem">
+        ✅ Criar conta
+      </button>
+
+      <button onclick="toggleSignupForm()" style="width:100%;padding:0.75rem;background:transparent;color:#667eea;border:2px solid #667eea;border-radius:6px;font-weight:bold;cursor:pointer;font-size:1rem">
+        ← Voltar
+      </button>
+    </div>
+
+    <div id="login-error" style="margin-top:1rem;padding:0.75rem;background:#fee;border:1px solid #fcc;border-radius:6px;color:#c33;display:none"></div>
+
+    <div class="modal-btns" style="margin-top:1.5rem">
+      <button class="btn-cancel" onclick="closeModal('login-overlay')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+
+<!-- ══════════════════════════════════════
      FIREBASE SDKs (CDN — compat mode)
      Não precisas de npm nem bundler!
 ══════════════════════════════════════ -->
@@ -406,34 +407,30 @@
       window.isAdmin = isAdmin;
       window.currentUser = user;
       
-      // Mostra/esconde elementos baseado no admin status
-      document.getElementById('page-login').style.display = 'none';
-      document.getElementById('page-dashboard').parentElement.style.display = 'block';
+      // Mostra novo aposta, esconde login
+      document.getElementById('btn-nova-aposta').style.display = 'block';
+      document.getElementById('btn-login').style.display = 'none';
       document.getElementById('btn-logout').style.display = 'block';
       
-      // Esconde/mostra botões de edição se não for admin
-      const editButtons = document.querySelectorAll('.btn-add, .unit-display');
-      editButtons.forEach(btn => {
-        btn.style.opacity = isAdmin ? '1' : '0.5';
-        btn.style.cursor = isAdmin ? 'pointer' : 'not-allowed';
-        if (!isAdmin) {
-          btn.onclick = (e) => {
-            e.preventDefault();
-            alert('⛔ Apenas o admin pode editar!');
-          };
-        }
-      });
-      
+      // Desativa botões se não for admin
       if (!isAdmin) {
+        document.getElementById('btn-nova-aposta').style.opacity = '0.5';
+        document.getElementById('btn-nova-aposta').style.cursor = 'not-allowed';
+        document.getElementById('btn-nova-aposta').onclick = (e) => {
+          e.preventDefault();
+          alert('⛔ Apenas o admin pode adicionar apostas!');
+        };
         console.log('👤 Utilizador: ' + user.email + ' (read-only)');
       } else {
+        document.getElementById('btn-nova-aposta').style.opacity = '1';
+        document.getElementById('btn-nova-aposta').style.cursor = 'pointer';
+        document.getElementById('btn-nova-aposta').onclick = openModal;
         console.log('👑 Admin logado: ' + user.email);
       }
     } else {
       // Utilizador não logado
-      document.getElementById('page-login').style.display = 'flex';
-      document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-      document.getElementById('page-login').style.display = 'flex';
+      document.getElementById('btn-nova-aposta').style.display = 'none';
+      document.getElementById('btn-login').style.display = 'block';
       document.getElementById('btn-logout').style.display = 'none';
       window.currentUser = null;
       window.isAdmin = false;

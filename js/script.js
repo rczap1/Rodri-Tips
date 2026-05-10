@@ -648,7 +648,13 @@ window.addEventListener('DOMContentLoaded', () => {
 // AUTENTICAÇÃO (Login/Signup/Logout)
 // ══════════════════════════════════════════
 
-function toggleSignup() {
+function openLoginModal() {
+  document.getElementById('login-overlay').classList.add('open');
+  document.getElementById('login-form').style.display = 'block';
+  document.getElementById('signup-form').style.display = 'none';
+}
+
+function toggleSignupForm() {
   const loginForm = document.getElementById('login-form');
   const signupForm = document.getElementById('signup-form');
   loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
