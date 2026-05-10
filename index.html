@@ -25,6 +25,7 @@
     <button onclick="goTo('pending',this)">Pendentes</button>
     <button onclick="goTo('analysis',this)">Análise</button>
     <button onclick="goTo('history',this)">Histórico</button>
+    <button onclick="goTo('firebase-test',this)">🧪 Teste Firebase</button>
   </div>
 
   <div class="nav-right">
@@ -127,6 +128,34 @@
   </div>
 
   <div id="analysis-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TESTE FIREBASE
+══════════════════════════════════════ -->
+<div class="page" id="page-firebase-test" style="padding:2rem">
+  <div class="ph">
+    <div class="ph-title">🧪 Teste Firebase</div>
+    <div class="ph-sub">Escreve uma mensagem para testar a ligação com a base de dados</div>
+  </div>
+
+  <div style="max-width:500px;margin:2rem auto">
+    <div class="fg full">
+      <label>Escreve uma mensagem:</label>
+      <input type="text" id="firebase-msg" placeholder="ex: Olá Mundo!">
+    </div>
+    
+    <button onclick="saveToFirebase()" style="width:100%;padding:0.75rem;background:#10b981;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:1rem">
+      💾 Guardar no Firebase
+    </button>
+
+    <div style="margin-top:2rem;padding:1.5rem;background:#f3f4f6;border-radius:8px">
+      <div style="font-weight:bold;margin-bottom:1rem">📋 Mensagens guardadas:</div>
+      <div id="firebase-list" style="display:flex;flex-direction:column;gap:0.75rem">
+        <div style="color:#9ca3af;text-align:center">Carregando...</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════

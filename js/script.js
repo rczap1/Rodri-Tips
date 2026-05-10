@@ -548,6 +548,80 @@ function setResultFilter(res, btn) {
   renderHistory();
 }
 
+// ══════════════════════════════════════════
+// FIREBASE TESTE
+// ══════════════════════════════════════════
+
+async function saveToFirebase() {
+  const msg = document.getElementById('firebase-msg').value.trim();
+  
+  if (!msg) {
+    snack('⚠️ Escreve uma mensagem!');
+    return;
+  }
+
+  try {
+    await db.collection('mensagens_teste').add({
+      texto: msg,
+      data: new Date(),
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    document.getElementById('firebase-msg').value = '';
+    snack('✅ Mensagem guardada no Firebase!');
+    loadFirebaseMessages();
+  } catch (error) {
+    console.error('Erro ao guardar:', error);
+    snack('❌ Erro ao guardar: ' + error.message);
+  }
+}
+
+function loadFirebaseMessages() {
+  const container = document.getElementById('firebase-list');
+  
+  if (!db) {
+    container.innerHTML = '<div style="color:#ef4444">❌ Firebase não inicializado</div>';
+    return;
+  }
+
+  db.collection('mensagens_teste')
+    .orderBy('timestamp', 'desc')
+    .limit(10)
+    .onSnapshot(
+      (snapshot) => {
+        if (snapshot.empty) {
+          container.innerHTML = '<div style="color:#9ca3af;text-align:center">Nenhuma mensagem ainda...</div>';
+          return;
+        }
+
+        container.innerHTML = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const date = data.timestamp ? data.timestamp.toDate().toLocaleString('pt-PT') : 'Sem data';
+          return `
+            <div style="padding:0.75rem;background:white;border-radius:6px;border-left:4px solid #10b981">
+              <div style="font-weight:bold;color:#111">${data.texto}</div>
+              <div style="font-size:0.85rem;color:#6b7280;margin-top:0.25rem">${date}</div>
+            </div>
+          `;
+        }).join('');
+      },
+      (error) => {
+        console.error('Erro ao carregar mensagens:', error);
+        container.innerHTML = `<div style="color:#ef4444">❌ Erro: ${error.message}</div>`;
+      }
+    );
+}
+
+// Carrega mensagens quando a página inicia
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const testPage = document.getElementById('page-firebase-test');
+    if (testPage) {
+      loadFirebaseMessages();
+    }
+  }, 500);
+});
+
 function renderHistory() {
   let filtered = [...bets];
   if (histSport  !== 'all') filtered = filtered.filter(b => b.sport  === histSport);
