@@ -651,15 +651,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function openLoginModal() {
   document.getElementById('login-overlay').classList.add('open');
   document.getElementById('login-form').style.display = 'block';
-  document.getElementById('signup-form').style.display = 'none';
   document.getElementById('login-error').style.display = 'none';
-}
-
-function toggleSignupForm() {
-  const loginForm = document.getElementById('login-form');
-  const signupForm = document.getElementById('signup-form');
-  loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
-  signupForm.style.display = signupForm.style.display === 'none' ? 'block' : 'none';
 }
 
 async function loginUser() {
@@ -674,7 +666,13 @@ async function loginUser() {
   }
 
   try {
-    await firebase.auth().signInWithEmailAndPassword(email, password);
+    const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
+    if (credential.user && credential.user.email !== ADMIN_EMAIL) {
+      await firebase.auth().signOut();
+      errorDiv.textContent = '⛔ Só o admin pode entrar.';
+      errorDiv.style.display = 'block';
+      return;
+    }
     errorDiv.style.display = 'none';
     document.getElementById('login-email').value = '';
     document.getElementById('login-password').value = '';
@@ -684,42 +682,6 @@ async function loginUser() {
     let msg = '❌ Erro: ';
     if (error.code === 'auth/user-not-found') msg += 'Utilizador não encontrado';
     else if (error.code === 'auth/wrong-password') msg += 'Password incorreta';
-    else msg += error.message;
-    
-    errorDiv.textContent = msg;
-    errorDiv.style.display = 'block';
-  }
-}
-
-async function signupUser() {
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
-  const errorDiv = document.getElementById('login-error');
-
-  if (!email || !password) {
-    errorDiv.textContent = '⚠️ Preenche email e password!';
-    errorDiv.style.display = 'block';
-    return;
-  }
-
-  if (password.length < 6) {
-    errorDiv.textContent = '⚠️ Password deve ter no mínimo 6 caracteres!';
-    errorDiv.style.display = 'block';
-    return;
-  }
-
-  try {
-    await firebase.auth().createUserWithEmailAndPassword(email, password);
-    errorDiv.style.display = 'none';
-    document.getElementById('signup-email').value = '';
-    document.getElementById('signup-password').value = '';
-    document.getElementById('login-overlay').classList.remove('open');
-    snack('✅ Conta criada! Estás logado.');
-    toggleSignupForm();
-  } catch (error) {
-    let msg = '❌ Erro: ';
-    if (error.code === 'auth/email-already-in-use') msg += 'Este email já está registado';
-    else if (error.code === 'auth/invalid-email') msg += 'Email inválido';
     else msg += error.message;
     
     errorDiv.textContent = msg;
