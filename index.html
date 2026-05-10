@@ -31,7 +31,7 @@
   <div class="nav-right">
     <div class="unit-display" onclick="openUnitModal()" id="unit-label" title="Clica para alterar o valor da unidade">1u = 10€</div>
     <button class="btn-add" id="btn-nova-aposta" onclick="openModal()">+ Nova Aposta</button>
-    <button class="btn-add" id="btn-login" onclick="openLoginModal()" style="display:none">Admin Login</button>
+    <button class="btn-add" id="btn-login" onclick="openLoginModal()" style="display:none">Login</button>
     <button class="btn-neutral" id="btn-logout" onclick="logout()" style="display:none">Logout</button>
   </div>
 </nav>
@@ -325,13 +325,13 @@
 ══════════════════════════════════════ -->
 <div class="overlay" id="login-overlay">
   <div class="modal" style="max-width:420px">
-    <div class="modal-title">Admin Login</div>
+    <div class="modal-title">Login</div>
     <div class="hint" style="margin-bottom:1.25rem">Apenas o tipster entra aqui. O resto do site continua público e read-only.</div>
 
     <div id="login-form">
       <div class="fg full" style="margin-bottom:1rem">
         <label>Email</label>
-        <input type="email" id="login-email" placeholder="Email do admin">
+        <input type="email" id="login-email" placeholder="Email">
       </div>
 
       <div class="fg full" style="margin-bottom:1.25rem">
