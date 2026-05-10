@@ -401,11 +401,34 @@
   // Monitora mudanças de autenticação
   firebase.auth().onAuthStateChanged(function(user) {
     if (user) {
-      // Utilizador logado
+      // Verifica se é admin
+      const isAdmin = user.email === 'rodrigofcarvalho421@gmail.com';
+      window.isAdmin = isAdmin;
+      window.currentUser = user;
+      
+      // Mostra/esconde elementos baseado no admin status
       document.getElementById('page-login').style.display = 'none';
       document.getElementById('page-dashboard').parentElement.style.display = 'block';
       document.getElementById('btn-logout').style.display = 'block';
-      window.currentUser = user;
+      
+      // Esconde/mostra botões de edição se não for admin
+      const editButtons = document.querySelectorAll('.btn-add, .unit-display');
+      editButtons.forEach(btn => {
+        btn.style.opacity = isAdmin ? '1' : '0.5';
+        btn.style.cursor = isAdmin ? 'pointer' : 'not-allowed';
+        if (!isAdmin) {
+          btn.onclick = (e) => {
+            e.preventDefault();
+            alert('⛔ Apenas o admin pode editar!');
+          };
+        }
+      });
+      
+      if (!isAdmin) {
+        console.log('👤 Utilizador: ' + user.email + ' (read-only)');
+      } else {
+        console.log('👑 Admin logado: ' + user.email);
+      }
     } else {
       // Utilizador não logado
       document.getElementById('page-login').style.display = 'flex';
@@ -413,6 +436,7 @@
       document.getElementById('page-login').style.display = 'flex';
       document.getElementById('btn-logout').style.display = 'none';
       window.currentUser = null;
+      window.isAdmin = false;
     }
   });
 </script>

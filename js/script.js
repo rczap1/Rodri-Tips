@@ -23,6 +23,8 @@ let currentSport = 'Tennis';
 let histSport    = 'all', histResult = 'all';
 let pendingSport = 'all';
 let analysisSport = 'Tennis', analysisMode = 'entity';
+let isAdmin      = false; // Verifica se é admin
+const ADMIN_EMAIL = 'rodrigofcarvalho421@gmail.com'; // SEU EMAIL
 
 // ── LOCAL STORAGE ────────────────────────────
 // Usando localStorage em vez de Firebase (mais rápido e sem problemas de permissões)
@@ -80,6 +82,13 @@ function openUnitModal() {
 }
 function setUnitPreset(v) { document.getElementById('unit-input').value = v; }
 function saveUnit() {
+  // Verifica se é admin
+  if (!window.isAdmin) {
+    snack('⛔ Apenas o admin pode mudar o valor da unidade!');
+    closeModal('unit-overlay');
+    return;
+  }
+
   const v = parseFloat(document.getElementById('unit-input').value);
   if (!v || v <= 0) { snack('⚠️ Valor inválido'); return; }
   unitVal = v;
@@ -136,6 +145,12 @@ function updateModalForSport(sport) {
 
 // ── MODAL OPEN / CLOSE / SAVE ─────────────────
 function openModal(docId = null) {
+  // Verifica se é admin
+  if (!window.isAdmin) {
+    snack('⛔ Apenas o admin pode adicionar/editar apostas!');
+    return;
+  }
+
   editId    = docId;
   selResult = 'Pending';
   const today = new Date().toISOString().split('T')[0];
@@ -187,6 +202,13 @@ function selRes(btn)   { selResult = btn.dataset.v; updateResUI(); }
 function updateResUI() { document.querySelectorAll('.res-opt').forEach(b => b.classList.toggle('sel', b.dataset.v === selResult)); }
 
 async function saveBet() {
+  // Verifica se é admin
+  if (!window.isAdmin) {
+    snack('⛔ Apenas o admin pode adicionar apostas!');
+    closeModal('bet-overlay');
+    return;
+  }
+
   const date   = document.getElementById('f-date').value.trim();
   const comp   = document.getElementById('f-comp').value.trim();
   const p1     = document.getElementById('f-p1').value.trim();
