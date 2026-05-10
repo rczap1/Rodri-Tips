@@ -158,6 +158,25 @@ nav {
 /* full-width variant for buttons (use as class "full") */
 .btn-add.full, .btn-outline.full { display: block; width: 100%; text-align: center; }
 
+.btn-neutral {
+  padding: 0.4rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted2);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-neutral:hover {
+  border-color: var(--border2);
+  color: var(--text);
+  background: #ffffff08;
+}
+
 /* outline variant using primary accent */
 .btn-outline {
   padding: 0.4rem 1.1rem;

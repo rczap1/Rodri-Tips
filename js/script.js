@@ -652,6 +652,7 @@ function openLoginModal() {
   document.getElementById('login-overlay').classList.add('open');
   document.getElementById('login-form').style.display = 'block';
   document.getElementById('signup-form').style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
 }
 
 function toggleSignupForm() {
@@ -677,6 +678,7 @@ async function loginUser() {
     errorDiv.style.display = 'none';
     document.getElementById('login-email').value = '';
     document.getElementById('login-password').value = '';
+    document.getElementById('login-overlay').classList.remove('open');
     snack('✅ Login feito com sucesso!');
   } catch (error) {
     let msg = '❌ Erro: ';
@@ -711,8 +713,9 @@ async function signupUser() {
     errorDiv.style.display = 'none';
     document.getElementById('signup-email').value = '';
     document.getElementById('signup-password').value = '';
+    document.getElementById('login-overlay').classList.remove('open');
     snack('✅ Conta criada! Estás logado.');
-    toggleSignup();
+    toggleSignupForm();
   } catch (error) {
     let msg = '❌ Erro: ';
     if (error.code === 'auth/email-already-in-use') msg += 'Este email já está registado';
