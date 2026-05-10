@@ -417,7 +417,7 @@
       } else {
         document.getElementById('btn-nova-aposta').style.opacity = '1';
         document.getElementById('btn-nova-aposta').style.cursor = 'pointer';
-        document.getElementById('btn-nova-aposta').onclick = openModal;
+        document.getElementById('btn-nova-aposta').onclick = () => openModal();
         console.log('👑 Admin logado: ' + user.email);
       }
     } else {
