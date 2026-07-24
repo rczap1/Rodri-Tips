@@ -895,20 +895,20 @@ function renderHistory() {
           ? `<span style="font-weight:600">${esc(b.p1)}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${esc(b.p2)}</span>`
           : esc(b.event) || '—');
     // Combinadas mostram só o resumo aqui — o detalhe por seleção já está em
-    // Análise → Combinadas e nos cartões de Pendentes; listar tudo aqui fazia
-    // as linhas ficarem com alturas muito diferentes (aspeto "torto").
-    const playerInfo = isCombo
-      ? ''
-      : (b.player
-          ? `<div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.2rem">👤 ${esc(b.player)}${b.pteam?` (${esc(b.pteam)})`:''}</div>`
-          : '');
-    const bookInfo = b.bookmaker
-      ? `<div style="font-size:0.6rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.15rem">🏠 ${esc(b.bookmaker)}</div>`
-      : '';
+    // Análise → Combinadas e nos cartões de Pendentes.
+    // Junta jogador/casa numa única 2ª linha, sempre presente (vazia se preciso),
+    // para todas as linhas da tabela terem sempre a mesma altura.
+    const secondaryParts = [];
+    if (!isCombo && b.player) secondaryParts.push(`👤 ${esc(b.player)}${b.pteam?` (${esc(b.pteam)})`:''}`);
+    if (b.bookmaker) secondaryParts.push(`🏠 ${esc(b.bookmaker)}`);
+    const secondaryLine = `<div style="font-size:0.62rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.2rem;min-height:1em">${secondaryParts.join(' · ') || '&nbsp;'}</div>`;
     return `<tr>
       <td class="mono text-muted" style="font-size:0.7rem">${fmtDate(b.date)}</td>
       <td><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]}</span></td>
-      <td style="max-width:160px">${confronto}${playerInfo}${bookInfo}</td>
+      <td style="max-width:160px">
+        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${confronto}</div>
+        ${secondaryLine}
+      </td>
       <td style="max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted2)">${isCombo ? '—' : esc(b.bet)}</td>
       <td style="font-size:0.67rem;color:var(--muted);font-family:'DM Mono',monospace;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.comp)||'—'}</td>
       <td class="mono text-right">${b.units}u</td>
