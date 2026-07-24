@@ -696,6 +696,7 @@ function renderAnalysis() {
           if (betText.includes(teamKey) || betText.includes(team.toLowerCase())) return team;
         }
 
+        if (/\bases\b|\baces?\b/i.test(b.bet || '')) return 'Ases';
         if (/\bover\b/i.test(b.bet || '')) return 'Over';
         if (/\bunder\b/i.test(b.bet || '')) return 'Under';
         if (/\bml\b/i.test(b.bet || '')) return 'ML';
@@ -710,6 +711,7 @@ function renderAnalysis() {
         if (betText.includes(firstToken) || betText.includes(name.toLowerCase())) return name;
       }
 
+      if (/\bases\b|\baces?\b/i.test(b.bet || '')) return 'Ases';
       if (/\bover\b/i.test(b.bet || '')) return 'Over';
       if (/\bunder\b/i.test(b.bet || '')) return 'Under';
       if (/\bml\b/i.test(b.bet || '')) return 'ML';
@@ -747,6 +749,7 @@ function renderAnalysis() {
       if (/\bML\b/i.test(bt))                 return 'ML (Match Winner)';
       if (/\b1X2\b|home|away|draw/i.test(bt)) return '1X2';
       if (/BTTS|ambas\s+marcam/i.test(bt))    return 'BTTS';
+      if (/\bases\b|\baces?\b/i.test(bt))     return 'Ases';
       if (/Over\s*\d/i.test(bt))              return 'Over';
       if (/Under\s*\d/i.test(bt))             return 'Under';
       if (/handicap|[+-]\d/i.test(bt))        return 'Handicap';
