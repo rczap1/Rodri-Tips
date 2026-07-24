@@ -894,8 +894,11 @@ function renderHistory() {
       : (b.p1 && b.p2
           ? `<span style="font-weight:600">${esc(b.p1)}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${esc(b.p2)}</span>`
           : esc(b.event) || '—');
+    // Combinadas mostram só o resumo aqui — o detalhe por seleção já está em
+    // Análise → Combinadas e nos cartões de Pendentes; listar tudo aqui fazia
+    // as linhas ficarem com alturas muito diferentes (aspeto "torto").
     const playerInfo = isCombo
-      ? (b.legs||[]).map(l => `<div style="font-size:0.62rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.15rem">${LEG_ICON[l.result]} ${esc(l.p1)} vs ${esc(l.p2)}</div>`).join('')
+      ? ''
       : (b.player
           ? `<div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.2rem">👤 ${esc(b.player)}${b.pteam?` (${esc(b.pteam)})`:''}</div>`
           : '');
