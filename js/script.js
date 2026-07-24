@@ -529,9 +529,11 @@ function pendingCard(b) {
         ${l.player ? `<div style="font-size:0.6rem;color:var(--muted2);font-family:'DM Mono',monospace">👤 ${esc(l.player)}${l.pteam?` (${esc(l.pteam)})`:''}</div>` : ''}
         ${l.comp ? `<div style="font-size:0.6rem;color:var(--muted)">${esc(l.comp)}</div>` : ''}
         <div class="pcard-actions" style="margin-top:0.3rem">
+          ${window.isAdmin ? `
           <button class="abtn win" onclick="quickResolveLeg('${b.id}',${i},'Win')">✅</button>
           <button class="abtn los" onclick="quickResolveLeg('${b.id}',${i},'Lost')">❌</button>
           <button class="abtn"     onclick="quickResolveLeg('${b.id}',${i},'Void')">↩️</button>
+          ` : ''}
           <span style="margin-left:0.3rem;font-size:0.75rem">${LEG_ICON[l.result]}</span>
         </div>
       </div>`).join('');
@@ -549,9 +551,10 @@ function pendingCard(b) {
       </div>
       <div class="pcard-meta">
         <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}</span>
+        ${window.isAdmin ? `
         <div class="pcard-actions">
           <button class="abtn" onclick="openModal('${b.id}')">✏️</button>
-        </div>
+        </div>` : ''}
       </div>
     </div>`;
   }
@@ -576,12 +579,13 @@ function pendingCard(b) {
     </div>
     <div class="pcard-meta">
       <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}</span>
+      ${window.isAdmin ? `
       <div class="pcard-actions">
         <button class="abtn win" onclick="quickResolve('${b.id}','Win')">✅</button>
         <button class="abtn los" onclick="quickResolve('${b.id}','Lost')">❌</button>
         <button class="abtn"     onclick="quickResolve('${b.id}','Void')">↩️</button>
         <button class="abtn"     onclick="openModal('${b.id}')">✏️</button>
-      </div>
+      </div>` : ''}
     </div>
   </div>`;
 }
@@ -880,8 +884,9 @@ function renderHistory() {
       <td class="mono text-right ${nc}">${netStr}</td>
       <td class="mono text-right ${nc}" style="font-size:0.7rem">${netE}</td>
       <td style="white-space:nowrap;display:flex;gap:0.25rem;padding:0.65rem 0.75rem">
+        ${window.isAdmin ? `
         <button class="abtn" onclick="openModal('${b.id}')">✏️</button>
-        <button class="abtn los" onclick="deleteBet('${b.id}')">🗑️</button>
+        <button class="abtn los" onclick="deleteBet('${b.id}')">🗑️</button>` : ''}
       </td>
     </tr>`;
   }).join('');

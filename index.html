@@ -349,17 +349,14 @@
   </div>
 </div>
 
-<div class="snackbar" id="snackbar"></div>
-
 <!-- ══════════════════════════════════════
      SUPABASE (CDN — sem npm nem bundler)
 ══════════════════════════════════════ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
-  // TODO: substitui pelo URL e anon key do teu projeto Supabase
-  // (Settings > API na dashboard do Supabase). A anon key é pública por natureza —
-  // a proteção real de escrita está nas RLS policies em supabase/schema.sql.
+  // A anon key é pública por natureza — a proteção real de escrita está nas
+  // RLS policies em supabase/schema.sql, não aqui.
   const SUPABASE_URL      = 'https://lndmksifebnxuknfzdbw.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_KdLcumQX02MYx3RkiBe-RA_7s3702rb';
   const ADMIN_EMAIL       = 'rodrigofcarvalho421@gmail.com';
@@ -381,6 +378,9 @@
       // mas por segurança termina a sessão.
       window.supabase.auth.signOut();
     }
+
+    // Atualiza os botões de editar/eliminar que dependem do estado de admin
+    if (typeof renderAll === 'function') renderAll();
   }
 
   window.supabase.auth.onAuthStateChange((_event, session) => {
