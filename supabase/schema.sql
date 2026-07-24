@@ -17,6 +17,7 @@ create table if not exists public.bets (
   result     text not null default 'Pending' check (result in ('Pending','Win','Lost','Void')),
   player     text,
   pteam      text,
+  bookmaker  text,
   bet_type   text not null default 'simple' check (bet_type in ('simple','combo')),
   legs       jsonb,
   created_at timestamptz not null default now()
@@ -46,7 +47,24 @@ create policy "bets_delete_admin"
   on public.bets for delete
   using (auth.jwt() ->> 'email' = 'rodrigofcarvalho421@gmail.com');
 
--- 3. Depois de correr isto:
+-- 3. Tabela de definições (valor da unidade "1u = X€", partilhado por todos)
+create table if not exists public.settings (
+  id         uuid primary key default gen_random_uuid(),
+  unit_value numeric not null default 10 check (unit_value > 0),
+  updated_at timestamptz not null default now()
+);
+
+insert into public.settings (unit_value) values (10);
+
+alter table public.settings enable row level security;
+
+create policy "settings_select_public" on public.settings for select using (true);
+
+create policy "settings_update_admin" on public.settings for update
+  using (auth.jwt() ->> 'email' = 'rodrigofcarvalho421@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'rodrigofcarvalho421@gmail.com');
+
+-- 4. Depois de correr isto:
 --    Authentication > Users > Add user
 --    email: rodrigofcarvalho421@gmail.com
 --    define uma password — é essa que vais usar no Login do site.

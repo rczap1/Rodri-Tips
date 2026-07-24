@@ -16,7 +16,8 @@ const SPORT_META = {
 
 // ── STATE ────────────────────────────────────
 let bets         = [];
-let unitVal      = parseFloat(localStorage.getItem('rodrigtips_unit') || '10');
+let unitVal      = 10;
+let settingsId   = null;
 let editId       = null;
 let selResult    = 'Pending';
 let currentSport = 'Tennis';
@@ -25,6 +26,7 @@ let pendingSport = 'all';
 let analysisSport = 'Tennis', analysisMode = 'entity';
 let betType   = null; // 'simple' | 'combo'
 let comboLegs = [];
+let bookmaker = null; // 22bet | Betano | Betclic | Bwin | Solverde
 // isAdmin e ADMIN_EMAIL são definidos em index.html (junto da inicialização do Supabase)
 
 // ── SUPABASE DATA LAYER ──────────────────────
@@ -65,13 +67,25 @@ async function dbDelete(id) {
   await refreshBets();
 }
 
+// ── SETTINGS (valor da unidade — partilhado, tal como as apostas) ──
+async function loadSettings() {
+  const { data, error } = await window.supabase.from('settings').select('*').limit(1).single();
+  if (error) { console.error('Erro ao carregar definições:', error); return; }
+  settingsId = data.id;
+  unitVal    = parseFloat(data.unit_value);
+  updateUnitLabel();
+  renderAll();
+}
+
+loadSettings();
+
 // ── UNIT ─────────────────────────────────────
 function openUnitModal() {
   document.getElementById('unit-input').value = unitVal;
   document.getElementById('unit-overlay').classList.add('open');
 }
 function setUnitPreset(v) { document.getElementById('unit-input').value = v; }
-function saveUnit() {
+async function saveUnit() {
   // Verifica se é admin
   if (!window.isAdmin) {
     snack('⛔ Apenas o admin pode mudar o valor da unidade!');
@@ -81,12 +95,19 @@ function saveUnit() {
 
   const v = parseFloat(document.getElementById('unit-input').value);
   if (!v || v <= 0) { snack('⚠️ Valor inválido'); return; }
-  unitVal = v;
-  localStorage.setItem('rodrigtips_unit', String(unitVal));
-  updateUnitLabel();
-  closeModal('unit-overlay');
-  renderAll();
-  snack('💶 1u = ' + unitVal + '€ guardado!');
+  if (!settingsId) { snack('⚠️ Definições ainda não carregaram, tenta outra vez'); return; }
+
+  try {
+    const { error } = await window.supabase.from('settings').update({ unit_value: v }).eq('id', settingsId);
+    if (error) throw error;
+    unitVal = v;
+    updateUnitLabel();
+    closeModal('unit-overlay');
+    renderAll();
+    snack('💶 1u = ' + unitVal + '€ guardado!');
+  } catch(e) {
+    snack('⚠️ Erro ao guardar: ' + e.message);
+  }
 }
 function updateUnitLabel() {
   document.getElementById('unit-label').textContent = '1u = ' + unitVal + '€';
@@ -235,6 +256,7 @@ function openModal(docId = null) {
   selResult = 'Pending';
   betType   = null;
   comboLegs = [];
+  bookmaker = null;
   const today = new Date().toISOString().split('T')[0];
 
   document.getElementById('bet-type-choice').style.display    = 'block';
@@ -246,6 +268,7 @@ function openModal(docId = null) {
     if (!b) return;
     document.getElementById('modal-title').textContent = 'Editar Aposta';
     currentSport = b.sport;
+    bookmaker    = b.bookmaker || null;
     document.getElementById('f-date').value = b.date;
 
     if (b.bet_type === 'combo') {
@@ -283,6 +306,7 @@ function openModal(docId = null) {
   });
   updateModalForSport(currentSport);
   updateResUI();
+  updateBookUI();
   if (docId) chooseBetType(bets.find(x => x.id === docId).bet_type || 'simple');
   document.getElementById('bet-overlay').classList.add('open');
 }
@@ -294,6 +318,9 @@ function closeModal(id) {
 
 function selRes(btn)   { selResult = btn.dataset.v; updateResUI(); }
 function updateResUI() { document.querySelectorAll('#simple-form-fields .res-opt[data-v]').forEach(b => b.classList.toggle('sel', b.dataset.v === selResult)); }
+
+function selBook(btn)   { bookmaker = btn.dataset.book; updateBookUI(); }
+function updateBookUI() { document.querySelectorAll('.book-opt').forEach(b => b.classList.toggle('sel', b.dataset.book === bookmaker)); }
 
 async function saveBet() {
   // Verifica se é admin
@@ -328,7 +355,7 @@ async function saveBet() {
       date, sport: currentSport, comp: null,
       p1: null, p2: null, event: null, bet: null,
       units, odds, result: comboResult(legs),
-      player: null, pteam: null,
+      player: null, pteam: null, bookmaker,
       bet_type: 'combo', legs
     };
 
@@ -362,7 +389,7 @@ async function saveBet() {
     date, sport: currentSport, comp,
     p1, p2, event: p1 + ' - ' + p2,
     bet, units, odds, result: selResult,
-    player, pteam, bet_type: 'simple'
+    player, pteam, bookmaker, bet_type: 'simple'
   };
 
   try {
@@ -550,7 +577,7 @@ function pendingCard(b) {
         <div><div class="pstat-label">Em €</div><div class="pstat-val">${potE}€</div></div>
       </div>
       <div class="pcard-meta">
-        <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}</span>
+        <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}${b.bookmaker ? ' · ' + esc(b.bookmaker) : ''}</span>
         ${window.isAdmin ? `
         <div class="pcard-actions">
           <button class="abtn" onclick="openModal('${b.id}')">✏️</button>
@@ -578,7 +605,7 @@ function pendingCard(b) {
       <div><div class="pstat-label">Em €</div><div class="pstat-val">${potE}€</div></div>
     </div>
     <div class="pcard-meta">
-      <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}</span>
+      <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}${b.bookmaker ? ' · ' + esc(b.bookmaker) : ''}</span>
       ${window.isAdmin ? `
       <div class="pcard-actions">
         <button class="abtn win" onclick="quickResolve('${b.id}','Win')">✅</button>
@@ -872,10 +899,13 @@ function renderHistory() {
       : (b.player
           ? `<div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.2rem">👤 ${esc(b.player)}${b.pteam?` (${esc(b.pteam)})`:''}</div>`
           : '');
+    const bookInfo = b.bookmaker
+      ? `<div style="font-size:0.6rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.15rem">🏠 ${esc(b.bookmaker)}</div>`
+      : '';
     return `<tr>
       <td class="mono text-muted" style="font-size:0.7rem">${fmtDate(b.date)}</td>
       <td><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]}</span></td>
-      <td style="max-width:160px">${confronto}${playerInfo}</td>
+      <td style="max-width:160px">${confronto}${playerInfo}${bookInfo}</td>
       <td style="max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted2)">${isCombo ? '—' : esc(b.bet)}</td>
       <td style="font-size:0.67rem;color:var(--muted);font-family:'DM Mono',monospace;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.comp)||'—'}</td>
       <td class="mono text-right">${b.units}u</td>

@@ -713,6 +713,21 @@ select option { background: var(--surface2); }
 .res-opt[data-v="Void"]:hover,    .res-opt[data-v="Void"].sel    { border-color: var(--void);    color: var(--void);    background: #94a3b812; }
 .res-opt[data-v="Pending"]:hover, .res-opt[data-v="Pending"].sel { border-color: var(--pending); color: var(--pending); background: #fbbf2412; }
 
+/* CASA DE APOSTAS */
+.book-opt {
+  padding: 0.35rem 0.9rem;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted2);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.13s;
+}
+
+.book-opt:hover, .book-opt.sel { border-color: var(--accent); color: var(--accent); background: #aaee3312; }
+
 .hint { font-size: 0.6rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 0.2rem; }
 
 .modal-btns { display: flex; gap: 0.8rem; margin-top: 1.5rem; }
