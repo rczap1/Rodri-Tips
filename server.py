@@ -2,7 +2,9 @@
 import http.server
 import socketserver
 import os
+import sys
 
+sys.stdout.reconfigure(encoding='utf-8')
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 PORT = 8000

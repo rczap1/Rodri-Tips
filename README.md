@@ -1,3 +1,28 @@
+# Rodri Tips — Bet Tracker
+
+## ⚙️ Setup (Supabase)
+
+O site guarda as apostas no [Supabase](https://supabase.com) (Postgres + Auth), partilhadas
+publicamente em modo leitura — só o admin (login) pode criar/editar/apagar.
+
+1. Cria um projeto grátis em supabase.com.
+2. No SQL Editor, corre o ficheiro [`supabase/schema.sql`](supabase/schema.sql) (cria a
+   tabela `bets` e as políticas de segurança — RLS).
+3. Em Authentication → Users, cria o utilizador admin com o teu email e uma password.
+4. Em Settings → API, copia o **Project URL** e a **anon public key**.
+5. Cola-os em [`index.html`](index.html), nas constantes `SUPABASE_URL` e `SUPABASE_ANON_KEY`
+   (procura por `SUBSTITUI-PELO-TEU-PROJECT-ID`).
+
+A anon key é segura para expor no frontend — a proteção real de escrita está nas RLS
+policies do Supabase, não no JavaScript.
+
+## 🚀 Deploy (GitHub Pages)
+
+Repo → Settings → Pages → Source: **Deploy from branch**, branch `main`, pasta `/(root)`.
+O site fica em `https://rczap1.github.io/Rodri-Tips/`.
+
+---
+
 # Meu Projeto HTML
 
 ## 📁 Estrutura do Projeto

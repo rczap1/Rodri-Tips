@@ -23,56 +23,46 @@ let currentSport = 'Tennis';
 let histSport    = 'all', histResult = 'all';
 let pendingSport = 'all';
 let analysisSport = 'Tennis', analysisMode = 'entity';
-let isAdmin      = false; // Verifica se é admin
-const ADMIN_EMAIL = 'rodrigofcarvalho421@gmail.com'; // SEU EMAIL
+let betType   = null; // 'simple' | 'combo'
+let comboLegs = [];
+// isAdmin e ADMIN_EMAIL são definidos em index.html (junto da inicialização do Supabase)
 
-// ── LOCAL STORAGE ────────────────────────────
-// Usando localStorage em vez de Firebase (mais rápido e sem problemas de permissões)
+// ── SUPABASE DATA LAYER ──────────────────────
+// Todas as apostas vivem na tabela `bets` do Supabase (ver supabase/schema.sql) —
+// partilhadas por todos os visitantes, não apenas guardadas neste browser.
 
-function loadBetsFromStorage() {
-  try {
-    const stored = localStorage.getItem('rodrigtips_bets');
-    return stored ? JSON.parse(stored) : [];
-  } catch (e) {
-    console.warn('Erro ao carregar apostas:', e);
-    return [];
-  }
+async function loadBets() {
+  const { data, error } = await window.supabase
+    .from('bets')
+    .select('*')
+    .order('date', { ascending: false });
+  if (error) { console.error('Erro ao carregar apostas:', error); return []; }
+  return data;
 }
 
-function saveBetsToStorage() {
-  try {
-    localStorage.setItem('rodrigtips_bets', JSON.stringify(bets));
-  } catch (e) {
-    console.error('Erro ao guardar apostas:', e);
-    snack('⚠️ Erro ao guardar');
-  }
+async function refreshBets() {
+  bets = await loadBets();
+  renderAll();
 }
 
-// Inicializa bets do localStorage
-bets = loadBetsFromStorage();
-renderAll();
+refreshBets();
 
 async function dbAdd(obj) {
-  const id = 'bet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  const newBet = { _id: id, ...obj };
-  bets.unshift(newBet);
-  saveBetsToStorage();
-  renderAll();
+  const { error } = await window.supabase.from('bets').insert(obj);
+  if (error) throw error;
+  await refreshBets();
 }
 
 async function dbUpdate(id, obj) {
-  const idx = bets.findIndex(b => b._id === id);
-  if (idx >= 0) {
-    bets[idx] = { ...bets[idx], ...obj };
-    saveBetsToStorage();
-    renderAll();
-  }
+  const { error } = await window.supabase.from('bets').update(obj).eq('id', id);
+  if (error) throw error;
+  await refreshBets();
 }
 
 async function dbDelete(id) {
-  bets = bets.filter(b => b._id !== id);
-  saveBetsToStorage();
-  renderAll();
+  const { error } = await window.supabase.from('bets').delete().eq('id', id);
+  if (error) throw error;
+  await refreshBets();
 }
 
 // ── UNIT ─────────────────────────────────────
@@ -124,6 +114,7 @@ function selectSport(btn) {
     if (b.dataset.sport === currentSport) b.classList.add('sel-' + currentSport);
   });
   updateModalForSport(currentSport);
+  if (betType === 'combo') renderComboLegs();
 }
 
 function updateModalForSport(sport) {
@@ -143,6 +134,95 @@ function updateModalForSport(sport) {
   }
 }
 
+// ── COMBINADAS ───────────────────────────────
+function emptyLeg() { return { comp:'', p1:'', p2:'', bet:'', player:'', pteam:'', result:'Pending' }; }
+
+function chooseBetType(type) {
+  betType = type;
+  document.getElementById('bet-type-choice').style.display     = 'none';
+  document.getElementById('simple-form-fields').style.display  = type === 'simple' ? 'grid' : 'none';
+  document.getElementById('combo-form-fields').style.display   = type === 'combo'  ? 'grid' : 'none';
+  if (type === 'combo') {
+    if (!comboLegs.length) comboLegs.push(emptyLeg());
+    renderComboLegs();
+  }
+}
+
+function comboResult(legs) {
+  if (legs.some(l => l.result === 'Lost'))    return 'Lost';
+  if (legs.some(l => l.result === 'Pending')) return 'Pending';
+  if (legs.every(l => l.result === 'Void'))   return 'Void';
+  return 'Win';
+}
+
+function updateLeg(i, field, value) { comboLegs[i][field] = value; }
+
+function setLegResult(i, v) { comboLegs[i].result = v; renderComboLegs(); }
+
+function addLeg() { comboLegs.push(emptyLeg()); renderComboLegs(); }
+
+function removeLeg(i) {
+  comboLegs.splice(i, 1);
+  if (!comboLegs.length) comboLegs.push(emptyLeg());
+  renderComboLegs();
+}
+
+function renderComboLegs() {
+  const meta = SPORT_META[currentSport];
+  document.getElementById('combo-legs').innerHTML = comboLegs.map((leg, i) => `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:0.8rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem">
+        <span class="hint" style="margin:0">Seleção ${i + 1}</span>
+        <button type="button" class="abtn los" onclick="removeLeg(${i})">🗑️</button>
+      </div>
+      <div class="form-grid">
+        <div class="fg full">
+          <label>Competição</label>
+          <input type="text" value="${esc(leg.comp)}" oninput="updateLeg(${i},'comp',this.value)">
+        </div>
+
+        <div class="vs-row">
+          <div class="fg">
+            <label>${meta.p1}</label>
+            <input type="text" value="${esc(leg.p1)}" oninput="updateLeg(${i},'p1',this.value)">
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="fg">
+            <label>${meta.p2}</label>
+            <input type="text" value="${esc(leg.p2)}" oninput="updateLeg(${i},'p2',this.value)">
+          </div>
+        </div>
+
+        <div class="fg full">
+          <label>Aposta / Mercado</label>
+          <input type="text" value="${esc(leg.bet)}" oninput="updateLeg(${i},'bet',this.value)">
+        </div>
+
+        ${meta.playerTeam ? `
+        <div style="display:grid;grid-template-columns:1fr 0.8fr;gap:0.5rem;grid-column:span 2">
+          <div class="fg">
+            <label>${currentSport === 'Football' ? 'Nome do Jogador (opcional)' : 'Jogador a apostar (opcional)'}</label>
+            <input type="text" value="${esc(leg.player)}" oninput="updateLeg(${i},'player',this.value)">
+          </div>
+          <div class="fg">
+            <label>Equipa do Jogador</label>
+            <input type="text" value="${esc(leg.pteam)}" oninput="updateLeg(${i},'pteam',this.value)">
+          </div>
+        </div>` : ''}
+
+        <div class="fg full">
+          <label>Resultado</label>
+          <div class="resolve-row">
+            <button type="button" class="res-opt ${leg.result==='Pending'?'sel':''}" data-v="Pending" onclick="setLegResult(${i},'Pending')">⏳ Pendente</button>
+            <button type="button" class="res-opt ${leg.result==='Win'?'sel':''}"     data-v="Win"     onclick="setLegResult(${i},'Win')">✅ Ganhou</button>
+            <button type="button" class="res-opt ${leg.result==='Lost'?'sel':''}"    data-v="Lost"    onclick="setLegResult(${i},'Lost')">❌ Perdeu</button>
+            <button type="button" class="res-opt ${leg.result==='Void'?'sel':''}"    data-v="Void"    onclick="setLegResult(${i},'Void')">↩️ Void</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
 // ── MODAL OPEN / CLOSE / SAVE ─────────────────
 function openModal(docId = null) {
   // Verifica se é admin
@@ -153,31 +233,44 @@ function openModal(docId = null) {
 
   editId    = docId;
   selResult = 'Pending';
+  betType   = null;
+  comboLegs = [];
   const today = new Date().toISOString().split('T')[0];
 
+  document.getElementById('bet-type-choice').style.display    = 'block';
+  document.getElementById('simple-form-fields').style.display = 'none';
+  document.getElementById('combo-form-fields').style.display  = 'none';
+
   if (docId) {
-    const b = bets.find(x => x._id === docId);
+    const b = bets.find(x => x.id === docId);
     if (!b) return;
     document.getElementById('modal-title').textContent = 'Editar Aposta';
     currentSport = b.sport;
-    document.getElementById('f-date').value   = b.date;
-    document.getElementById('f-comp').value   = b.comp   || '';
-    document.getElementById('f-p1').value     = b.p1     || '';
-    document.getElementById('f-p2').value     = b.p2     || '';
-    document.getElementById('f-bet').value    = b.bet    || '';
-    document.getElementById('f-units').value  = b.units;
-    document.getElementById('f-odds').value   = b.odds;
-    const playerEl = document.getElementById('f-player');
-    const pteamEl = document.getElementById('f-pteam');
-    if (playerEl) playerEl.value = b.player || '';
-    if (pteamEl) pteamEl.value = b.pteam || '';
-    selResult = b.result;
+    document.getElementById('f-date').value = b.date;
+
+    if (b.bet_type === 'combo') {
+      document.getElementById('f-combo-units').value = b.units;
+      document.getElementById('f-combo-odds').value  = b.odds;
+      comboLegs = (b.legs || []).map(l => ({ ...emptyLeg(), ...l }));
+    } else {
+      document.getElementById('f-comp').value   = b.comp   || '';
+      document.getElementById('f-p1').value     = b.p1     || '';
+      document.getElementById('f-p2').value     = b.p2     || '';
+      document.getElementById('f-bet').value    = b.bet    || '';
+      document.getElementById('f-units').value  = b.units;
+      document.getElementById('f-odds').value   = b.odds;
+      const playerEl = document.getElementById('f-player');
+      const pteamEl = document.getElementById('f-pteam');
+      if (playerEl) playerEl.value = b.player || '';
+      if (pteamEl) pteamEl.value = b.pteam || '';
+      selResult = b.result;
+    }
   } else {
     document.getElementById('modal-title').textContent = 'Nova Aposta';
     currentSport = 'Tennis';
     document.getElementById('f-date').value   = today;
     document.getElementById('f-units').value  = '0.5';
-    ['f-comp','f-p1','f-p2','f-bet','f-odds','f-player','f-pteam'].forEach(id => {
+    ['f-comp','f-p1','f-p2','f-bet','f-odds','f-player','f-pteam','f-combo-units','f-combo-odds'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -190,6 +283,7 @@ function openModal(docId = null) {
   });
   updateModalForSport(currentSport);
   updateResUI();
+  if (docId) chooseBetType(bets.find(x => x.id === docId).bet_type || 'simple');
   document.getElementById('bet-overlay').classList.add('open');
 }
 
@@ -199,7 +293,7 @@ function closeModal(id) {
 }
 
 function selRes(btn)   { selResult = btn.dataset.v; updateResUI(); }
-function updateResUI() { document.querySelectorAll('.res-opt').forEach(b => b.classList.toggle('sel', b.dataset.v === selResult)); }
+function updateResUI() { document.querySelectorAll('#simple-form-fields .res-opt[data-v]').forEach(b => b.classList.toggle('sel', b.dataset.v === selResult)); }
 
 async function saveBet() {
   // Verifica se é admin
@@ -209,7 +303,46 @@ async function saveBet() {
     return;
   }
 
-  const date   = document.getElementById('f-date').value.trim();
+  if (!betType) { snack('⚠️ Escolhe o tipo de aposta'); return; }
+
+  const date = document.getElementById('f-date').value.trim();
+  if (!date) { snack('⚠️ Preenche a data'); return; }
+
+  if (betType === 'combo') {
+    const units = parseFloat(document.getElementById('f-combo-units').value);
+    const odds  = parseFloat(document.getElementById('f-combo-odds').value);
+
+    if (isNaN(units) || units <= 0)  { snack('⚠️ Units inválidas'); return; }
+    if (isNaN(odds)  || odds < 1.01) { snack('⚠️ Odd total inválida (mín. 1.01)'); return; }
+
+    const legs = comboLegs
+      .map(l => ({
+        comp: l.comp.trim(), p1: l.p1.trim(), p2: l.p2.trim(), bet: l.bet.trim(),
+        player: l.player.trim(), pteam: l.pteam.trim(), result: l.result
+      }))
+      .filter(l => l.p1 && l.p2 && l.bet);
+
+    if (!legs.length) { snack('⚠️ Adiciona pelo menos uma seleção completa'); return; }
+
+    const obj = {
+      date, sport: currentSport, comp: null,
+      p1: null, p2: null, event: null, bet: null,
+      units, odds, result: comboResult(legs),
+      player: null, pteam: null,
+      bet_type: 'combo', legs
+    };
+
+    try {
+      if (editId) { await dbUpdate(editId, obj); snack('✅ Combinada atualizada!'); }
+      else        { await dbAdd(obj);            snack('🧩 Combinada guardada!'); }
+      closeModal('bet-overlay');
+    } catch(e) {
+      console.error(e);
+      snack('⚠️ Erro ao guardar: ' + e.message);
+    }
+    return;
+  }
+
   const comp   = document.getElementById('f-comp').value.trim();
   const p1     = document.getElementById('f-p1').value.trim();
   const p2     = document.getElementById('f-p2').value.trim();
@@ -219,8 +352,8 @@ async function saveBet() {
   const player = document.getElementById('f-player').value.trim();
   const pteam  = document.getElementById('f-pteam').value.trim();
 
-  if (!date || !p1 || !p2 || !bet || !units || !odds) {
-    snack('⚠️ Preenche: data, confronto, aposta, units e odd'); return;
+  if (!p1 || !p2 || !bet || !units || !odds) {
+    snack('⚠️ Preenche: confronto, aposta, units e odd'); return;
   }
   if (isNaN(units) || units <= 0)  { snack('⚠️ Units inválidas'); return; }
   if (isNaN(odds)  || odds < 1.01) { snack('⚠️ Odd inválida (mín. 1.01)'); return; }
@@ -229,8 +362,7 @@ async function saveBet() {
     date, sport: currentSport, comp,
     p1, p2, event: p1 + ' - ' + p2,
     bet, units, odds, result: selResult,
-    player, pteam,
-    createdAt: new Date().toISOString()
+    player, pteam, bet_type: 'simple'
   };
 
   try {
@@ -240,6 +372,18 @@ async function saveBet() {
   } catch(e) {
     console.error(e);
     snack('⚠️ Erro ao guardar: ' + e.message);
+  }
+}
+
+async function quickResolveLeg(betId, legIndex, result) {
+  const b = bets.find(x => x.id === betId);
+  if (!b || !b.legs) return;
+  const newLegs = b.legs.map((l, i) => i === legIndex ? { ...l, result } : l);
+  try {
+    await dbUpdate(betId, { legs: newLegs, result: comboResult(newLegs) });
+    snack('✅ Resultado atualizado!');
+  } catch(e) {
+    snack('⚠️ Erro: ' + e.message);
   }
 }
 
@@ -371,20 +515,58 @@ function renderPending() {
     : '<div class="empty"><div class="empty-icon">🎯</div>Sem apostas pendentes</div>';
 }
 
+const LEG_ICON = { Pending:'⏳', Win:'✅', Lost:'❌', Void:'↩️' };
+
 function pendingCard(b) {
   const pot  = (b.units * b.odds).toFixed(2);
   const potE = (b.units * b.odds * unitVal).toFixed(2);
+
+  if (b.bet_type === 'combo') {
+    const legsHtml = (b.legs || []).map((l, i) => `
+      <div style="margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(--border)">
+        <div style="font-size:0.72rem"><strong>${esc(l.p1)}</strong> <span style="color:var(--muted);font-size:0.65rem">vs</span> <strong>${esc(l.p2)}</strong></div>
+        <div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace">${esc(l.bet)}</div>
+        ${l.player ? `<div style="font-size:0.6rem;color:var(--muted2);font-family:'DM Mono',monospace">👤 ${esc(l.player)}${l.pteam?` (${esc(l.pteam)})`:''}</div>` : ''}
+        ${l.comp ? `<div style="font-size:0.6rem;color:var(--muted)">${esc(l.comp)}</div>` : ''}
+        <div class="pcard-actions" style="margin-top:0.3rem">
+          <button class="abtn win" onclick="quickResolveLeg('${b.id}',${i},'Win')">✅</button>
+          <button class="abtn los" onclick="quickResolveLeg('${b.id}',${i},'Lost')">❌</button>
+          <button class="abtn"     onclick="quickResolveLeg('${b.id}',${i},'Void')">↩️</button>
+          <span style="margin-left:0.3rem;font-size:0.75rem">${LEG_ICON[l.result]}</span>
+        </div>
+      </div>`).join('');
+
+    return `<div class="pcard" style="--pc:${SC[b.sport]}">
+      <div class="pcard-tag">⏳ PENDENTE</div>
+      <div style="margin-bottom:0.35rem"><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]} ${SL[b.sport]}</span></div>
+      <div class="pcard-event">🧩 Combinada (${(b.legs||[]).length}x)</div>
+      ${legsHtml}
+      <div class="pcard-footer" style="margin-top:0.7rem">
+        <div><div class="pstat-label">Odd Total</div><div class="pstat-val">${b.odds.toFixed(2)}</div></div>
+        <div><div class="pstat-label">Units</div><div class="pstat-val">${b.units}u</div></div>
+        <div><div class="pstat-label">Retorno</div><div class="pstat-val">${pot}u</div></div>
+        <div><div class="pstat-label">Em €</div><div class="pstat-val">${potE}€</div></div>
+      </div>
+      <div class="pcard-meta">
+        <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}</span>
+        <div class="pcard-actions">
+          <button class="abtn" onclick="openModal('${b.id}')">✏️</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   // Show player + team badge if present
   const playerBadge = b.player
     ? `<div style="margin-top:0.3rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted2)">
-         👤 ${b.player}${b.pteam ? ` <span style="color:var(--muted)">(${b.pteam})</span>` : ''}
+         👤 ${esc(b.player)}${b.pteam ? ` <span style="color:var(--muted)">(${esc(b.pteam)})</span>` : ''}
        </div>`
     : '';
   return `<div class="pcard" style="--pc:${SC[b.sport]}">
     <div class="pcard-tag">⏳ PENDENTE</div>
     <div style="margin-bottom:0.35rem"><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]} ${SL[b.sport]}</span></div>
-    <div class="pcard-event">${b.p1||''} <span style="color:var(--muted);font-size:0.72rem">vs</span> ${b.p2||''}</div>
-    <div class="pcard-bet">${b.bet}</div>
+    <div class="pcard-event">${esc(b.p1)||''} <span style="color:var(--muted);font-size:0.72rem">vs</span> ${esc(b.p2)||''}</div>
+    <div class="pcard-bet">${esc(b.bet)}</div>
     ${playerBadge}
     <div class="pcard-footer" style="margin-top:0.7rem">
       <div><div class="pstat-label">Odd</div><div class="pstat-val">${b.odds.toFixed(2)}</div></div>
@@ -393,12 +575,12 @@ function pendingCard(b) {
       <div><div class="pstat-label">Em €</div><div class="pstat-val">${potE}€</div></div>
     </div>
     <div class="pcard-meta">
-      <span>${b.comp||'—'} · ${fmtDate(b.date)}</span>
+      <span>${esc(b.comp)||'—'} · ${fmtDate(b.date)}</span>
       <div class="pcard-actions">
-        <button class="abtn win" onclick="quickResolve('${b._id}','Win')">✅</button>
-        <button class="abtn los" onclick="quickResolve('${b._id}','Lost')">❌</button>
-        <button class="abtn"     onclick="quickResolve('${b._id}','Void')">↩️</button>
-        <button class="abtn"     onclick="openModal('${b._id}')">✏️</button>
+        <button class="abtn win" onclick="quickResolve('${b.id}','Win')">✅</button>
+        <button class="abtn los" onclick="quickResolve('${b.id}','Lost')">❌</button>
+        <button class="abtn"     onclick="quickResolve('${b.id}','Void')">↩️</button>
+        <button class="abtn"     onclick="openModal('${b.id}')">✏️</button>
       </div>
     </div>
   </div>`;
@@ -418,10 +600,46 @@ function setAnalysisMode(mode, btn) {
   renderAnalysis();
 }
 
+function renderComboAnalysis() {
+  const combos = bets.filter(b => b.sport === analysisSport && b.bet_type === 'combo' && b.result !== 'Pending');
+
+  document.getElementById('analysis-content').innerHTML = `
+    <div class="analysis-wrap">
+      <div class="analysis-header">
+        <div>
+          <div class="analysis-title">Combinadas — ${SI[analysisSport]} ${SL[analysisSport]}</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">Desempenho por bilhete (não decomposto por seleção)</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${combos.length} combinadas</div>
+      </div>
+
+      <table class="analysis-table">
+        <thead><tr><th>Data</th><th>Seleções</th><th>Odd</th><th>Units</th><th>Resultado</th><th>Lucro (u)</th><th>Lucro (€)</th></tr></thead>
+        <tbody>${!combos.length
+          ? `<tr><td colspan="7"><div class="empty">Sem combinadas ainda.</div></td></tr>`
+          : combos.slice().sort((a,b) => b.date.localeCompare(a.date)).map(b => {
+              const net = calcNet(b);
+              const rl  = {Win:'✅ Win',Lost:'❌ Lost',Void:'↩️ Void'}[b.result] || b.result;
+              const legsStr = (b.legs||[]).map(l => `${LEG_ICON[l.result]} ${esc(l.p1)} vs ${esc(l.p2)}`).join('<br>');
+              return `<tr>
+                <td class="mono text-muted" style="font-size:0.7rem">${fmtDate(b.date)}</td>
+                <td style="font-size:0.68rem">${legsStr}</td>
+                <td class="mono">${b.odds.toFixed(2)}</td>
+                <td class="mono">${b.units}u</td>
+                <td><span class="rbadge ${b.result}">${rl}</span></td>
+                <td class="mono ${net>=0?'text-green':'text-red'}">${net>=0?'+':''}${net.toFixed(2)}u</td>
+                <td class="mono ${net>=0?'text-green':'text-red'}">${(net*unitVal>=0?'+':'')+(net*unitVal).toFixed(2)}€</td>
+              </tr>`;
+            }).join('')
+        }</tbody>
+      </table>
+    </div>`;
+}
+
 function renderAnalysis() {
-  console.log('=== renderAnalysis called ===', { analysisMode, analysisSport });
-  const sportBets = bets.filter(b => b.sport === analysisSport && b.result !== 'Pending');
-  console.log('sportBets:', sportBets.length);
+  if (analysisMode === 'combos') { renderComboAnalysis(); return; }
+
+  const sportBets = bets.filter(b => b.sport === analysisSport && b.result !== 'Pending' && b.bet_type !== 'combo');
   let groups = [], title = '', subtitle = '';
 
   // Helper: check if a label is a market type (not an entity)
@@ -480,7 +698,6 @@ function renderAnalysis() {
       // Tennis / MMA: group by the selected player when mentioned. Skip pure market bets.
       sportBets.forEach(b => {
         const key = inferEntityLabel(b);
-        console.log('DEBUG:', { sport: b.sport, bet: b.bet, key, isMarket: isMarketType(key) });
         if (!isMarketType(key)) {
           if (!map[key]) map[key] = { key, bets: [] };
           map[key].bets.push(b);
@@ -539,7 +756,7 @@ function renderAnalysis() {
               const barC   = profit >= 0 ? 'var(--win)' : 'var(--loss)';
               return `<tr>
                 <td style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);width:28px">${i+1}</td>
-                <td><div class="entity-name">${g.key}</div></td>
+                <td><div class="entity-name">${esc(g.key)}</div></td>
                 <td class="mono">${g.bets.length}</td>
                 <td class="mono text-muted">${st.wins}W/${st.losses}L</td>
                 <td class="mono">${st.wr.toFixed(0)}%</td>
@@ -592,9 +809,10 @@ async function loginUser() {
   }
 
   try {
-    const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
-    if (credential.user && credential.user.email !== ADMIN_EMAIL) {
-      await firebase.auth().signOut();
+    const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (data.user && data.user.email !== ADMIN_EMAIL) {
+      await window.supabase.auth.signOut();
       errorDiv.textContent = '⛔ Só o admin pode entrar.';
       errorDiv.style.display = 'block';
       return;
@@ -605,19 +823,16 @@ async function loginUser() {
     document.getElementById('login-overlay').classList.remove('open');
     snack('✅ Login feito com sucesso!');
   } catch (error) {
-    let msg = '❌ Erro: ';
-    if (error.code === 'auth/user-not-found') msg += 'Utilizador não encontrado';
-    else if (error.code === 'auth/wrong-password') msg += 'Password incorreta';
-    else msg += error.message;
-    
-    errorDiv.textContent = msg;
+    errorDiv.textContent = '❌ Erro: ' + (error.message === 'Invalid login credentials'
+      ? 'Email ou password incorretos'
+      : error.message);
     errorDiv.style.display = 'block';
   }
 }
 
 async function logout() {
   try {
-    await firebase.auth().signOut();
+    await window.supabase.auth.signOut();
     snack('👋 Logout feito!');
   } catch (error) {
     snack('❌ Erro ao fazer logout: ' + error.message);
@@ -642,32 +857,46 @@ function renderHistory() {
     const netE   = b.result === 'Pending' ? '—' : (net*unitVal>=0?'+':'')+(net*unitVal).toFixed(2)+'€';
     const nc     = net > 0 ? 'text-green' : net < 0 ? 'text-red' : 'text-muted';
     const rl     = {Win:'✅ Win',Lost:'❌ Lost',Pending:'⏳ Pend.',Void:'↩️ Void'}[b.result]||b.result;
-    const confronto = b.p1 && b.p2
-      ? `<span style="font-weight:600">${b.p1}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${b.p2}</span>`
-      : b.event || '—';
-    const playerInfo = b.player
-      ? `<div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.2rem">👤 ${b.player}${b.pteam?` (${b.pteam})`:''}</div>`
-      : '';
+    const isCombo = b.bet_type === 'combo';
+    const confronto = isCombo
+      ? `🧩 Combinada (${(b.legs||[]).length}x)`
+      : (b.p1 && b.p2
+          ? `<span style="font-weight:600">${esc(b.p1)}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${esc(b.p2)}</span>`
+          : esc(b.event) || '—');
+    const playerInfo = isCombo
+      ? (b.legs||[]).map(l => `<div style="font-size:0.62rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.15rem">${LEG_ICON[l.result]} ${esc(l.p1)} vs ${esc(l.p2)}</div>`).join('')
+      : (b.player
+          ? `<div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:0.2rem">👤 ${esc(b.player)}${b.pteam?` (${esc(b.pteam)})`:''}</div>`
+          : '');
     return `<tr>
       <td class="mono text-muted" style="font-size:0.7rem">${fmtDate(b.date)}</td>
       <td><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]}</span></td>
       <td style="max-width:160px">${confronto}${playerInfo}</td>
-      <td style="max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted2)">${b.bet}</td>
-      <td style="font-size:0.67rem;color:var(--muted);font-family:'DM Mono',monospace;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.comp||'—'}</td>
+      <td style="max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted2)">${isCombo ? '—' : esc(b.bet)}</td>
+      <td style="font-size:0.67rem;color:var(--muted);font-family:'DM Mono',monospace;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.comp)||'—'}</td>
       <td class="mono text-right">${b.units}u</td>
       <td class="mono text-right">${b.odds.toFixed(2)}</td>
       <td><span class="rbadge ${b.result}">${rl}</span></td>
       <td class="mono text-right ${nc}">${netStr}</td>
       <td class="mono text-right ${nc}" style="font-size:0.7rem">${netE}</td>
       <td style="white-space:nowrap;display:flex;gap:0.25rem;padding:0.65rem 0.75rem">
-        <button class="abtn" onclick="openModal('${b._id}')">✏️</button>
-        <button class="abtn los" onclick="deleteBet('${b._id}')">🗑️</button>
+        <button class="abtn" onclick="openModal('${b.id}')">✏️</button>
+        <button class="abtn los" onclick="deleteBet('${b.id}')">🗑️</button>
       </td>
     </tr>`;
   }).join('');
 }
 
 // ── UTILS ────────────────────────────────────
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 function fmtDate(d) {
   if (!d) return '—';
   return new Date(d+'T12:00:00').toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});

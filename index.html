@@ -126,6 +126,7 @@
     <button class="sub-tab active" onclick="setAnalysisMode('entity',this)">👤 Jogadores / Entidades</button>
     <button class="sub-tab"        onclick="setAnalysisMode('market',this)">📊 Mercados</button>
     <button class="sub-tab"        onclick="setAnalysisMode('comp',this)">🏆 Competições</button>
+    <button class="sub-tab"        onclick="setAnalysisMode('combos',this)">🧩 Combinadas</button>
   </div>
 
   <div id="analysis-content"></div>
@@ -201,7 +202,17 @@
           <button class="sport-sel-btn"             data-sport="Football" onclick="selectSport(this)">⚽ Futebol</button>
         </div>
       </div>
+    </div>
 
+    <div class="fg full" id="bet-type-choice" style="margin-top:1rem">
+      <label>Tipo de Aposta</label>
+      <div class="resolve-row">
+        <button type="button" class="res-opt" onclick="chooseBetType('simple')">🎯 Aposta Simples</button>
+        <button type="button" class="res-opt" onclick="chooseBetType('combo')">🧩 Aposta Combinada</button>
+      </div>
+    </div>
+
+    <div class="form-grid" id="simple-form-fields" style="margin-top:1rem;display:none">
       <div class="fg full">
         <label>Competição</label>
         <input type="text" id="f-comp">
@@ -255,6 +266,23 @@
           <button class="res-opt"     data-v="Lost"    onclick="selRes(this)">❌ Perdeu</button>
           <button class="res-opt"     data-v="Void"    onclick="selRes(this)">↩️ Void</button>
         </div>
+      </div>
+    </div>
+
+    <div class="form-grid" id="combo-form-fields" style="margin-top:1rem;display:none">
+      <div class="fg full" id="combo-legs"></div>
+
+      <div class="fg full">
+        <button type="button" class="btn-cancel" onclick="addLeg()">+ Adicionar seleção</button>
+      </div>
+
+      <div class="fg">
+        <label>Units apostadas</label>
+        <input type="number" id="f-combo-units" step="0.1" min="0.1">
+      </div>
+      <div class="fg">
+        <label>Odd Total</label>
+        <input type="number" id="f-combo-odds" step="0.01" min="1.01">
       </div>
     </div>
 
@@ -324,75 +352,43 @@
 <div class="snackbar" id="snackbar"></div>
 
 <!-- ══════════════════════════════════════
-     FIREBASE SDKs (CDN — compat mode)
-     Não precisas de npm nem bundler!
+     SUPABASE (CDN — sem npm nem bundler)
 ══════════════════════════════════════ -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
-  // Inicializa Firebase aqui para estar disponível antes do script.js
-  const firebaseConfig = {
-    apiKey:            "AIzaSyDB_YJBHplSpg18nEv9tMDjcZ3jP_4VlnY",
-    authDomain:        "rodri-tips.firebaseapp.com",
-    projectId:         "rodri-tips",
-    storageBucket:     "rodri-tips.firebasestorage.app",
-    messagingSenderId: "793882027792",
-    appId:             "1:793882027792:web:28fa460685b82da523a795"
-  };
-  firebase.initializeApp(firebaseConfig);
-  window.db = firebase.firestore();
-  window.auth = firebase.auth();
-  
-  // Monitora mudanças de autenticação
-  firebase.auth().onAuthStateChanged(function(user) {
-    if (user) {
-      // Verifica se é admin
-      const isAdmin = user.email === 'rodrigofcarvalho421@gmail.com';
-      if (!isAdmin) {
-        window.currentUser = null;
-        window.isAdmin = false;
-        document.getElementById('btn-nova-aposta').style.display = 'none';
-        document.getElementById('btn-login').style.display = 'block';
-        document.getElementById('btn-logout').style.display = 'none';
-        document.getElementById('login-overlay').classList.remove('open');
-        firebase.auth().signOut();
-        return;
-      }
-      window.isAdmin = isAdmin;
-      window.currentUser = user;
-      
-      // Mostra novo aposta, esconde login
-      document.getElementById('btn-nova-aposta').style.display = 'block';
-      document.getElementById('btn-login').style.display = 'none';
-      document.getElementById('btn-logout').style.display = 'block';
-      document.getElementById('login-overlay').classList.remove('open');
-      
-      // Desativa botões se não for admin
-      if (!isAdmin) {
-        document.getElementById('btn-nova-aposta').style.opacity = '0.5';
-        document.getElementById('btn-nova-aposta').style.cursor = 'not-allowed';
-        document.getElementById('btn-nova-aposta').onclick = (e) => {
-          e.preventDefault();
-          alert('⛔ Apenas o admin pode adicionar apostas!');
-        };
-        console.log('👤 Utilizador: ' + user.email + ' (read-only)');
-      } else {
-        document.getElementById('btn-nova-aposta').style.opacity = '1';
-        document.getElementById('btn-nova-aposta').style.cursor = 'pointer';
-        document.getElementById('btn-nova-aposta').onclick = () => openModal();
-        console.log('👑 Admin logado: ' + user.email);
-      }
-    } else {
-      // Utilizador não logado
-      document.getElementById('btn-nova-aposta').style.display = 'none';
-      document.getElementById('btn-login').style.display = 'block';
-      document.getElementById('btn-logout').style.display = 'none';
-      document.getElementById('login-overlay').classList.remove('open');
-      window.currentUser = null;
-      window.isAdmin = false;
+  // TODO: substitui pelo URL e anon key do teu projeto Supabase
+  // (Settings > API na dashboard do Supabase). A anon key é pública por natureza —
+  // a proteção real de escrita está nas RLS policies em supabase/schema.sql.
+  const SUPABASE_URL      = 'https://lndmksifebnxuknfzdbw.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_KdLcumQX02MYx3RkiBe-RA_7s3702rb';
+  const ADMIN_EMAIL       = 'rodrigofcarvalho421@gmail.com';
+
+  window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function applyAuthUI(user) {
+    const isAdmin = !!user && user.email === ADMIN_EMAIL;
+    window.currentUser = isAdmin ? user : null;
+    window.isAdmin      = isAdmin;
+
+    document.getElementById('btn-nova-aposta').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('btn-login').style.display       = isAdmin ? 'none'  : 'block';
+    document.getElementById('btn-logout').style.display       = isAdmin ? 'block' : 'none';
+    document.getElementById('login-overlay').classList.remove('open');
+
+    if (user && !isAdmin) {
+      // Utilizador autenticado mas não é o admin — não deve acontecer (só há 1 conta),
+      // mas por segurança termina a sessão.
+      window.supabase.auth.signOut();
     }
+  }
+
+  window.supabase.auth.onAuthStateChange((_event, session) => {
+    applyAuthUI(session ? session.user : null);
+  });
+
+  window.supabase.auth.getSession().then(({ data }) => {
+    applyAuthUI(data.session ? data.session.user : null);
   });
 </script>
 
