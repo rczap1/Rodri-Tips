@@ -538,7 +538,7 @@ main {
   padding: 0.65rem 0.9rem;
   font-size: 0.79rem;
   border-bottom: 1px solid var(--border);
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .bet-table tr:last-child td { border-bottom: none; }
