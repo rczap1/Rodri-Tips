@@ -916,10 +916,12 @@ function renderHistory() {
       <td><span class="rbadge ${b.result}">${rl}</span></td>
       <td class="mono text-right ${nc}">${netStr}</td>
       <td class="mono text-right ${nc}" style="font-size:0.7rem">${netE}</td>
-      <td style="white-space:nowrap;display:flex;gap:0.25rem;padding:0.65rem 0.75rem">
-        ${window.isAdmin ? `
-        <button class="abtn" onclick="openModal('${b.id}')">✏️</button>
-        <button class="abtn los" onclick="deleteBet('${b.id}')">🗑️</button>` : ''}
+      <td style="white-space:nowrap">
+        <div style="display:flex;gap:0.25rem">
+          ${window.isAdmin ? `
+          <button class="abtn" onclick="openModal('${b.id}')">✏️</button>
+          <button class="abtn los" onclick="deleteBet('${b.id}')">🗑️</button>` : ''}
+        </div>
       </td>
     </tr>`;
   }).join('');
