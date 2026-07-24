@@ -550,25 +550,23 @@ function pendingCard(b) {
 
   if (b.bet_type === 'combo') {
     const legsHtml = (b.legs || []).map((l, i) => `
-      <div style="margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(--border)">
-        <div style="font-size:0.72rem"><strong>${esc(l.p1)}</strong> <span style="color:var(--muted);font-size:0.65rem">vs</span> <strong>${esc(l.p2)}</strong></div>
-        <div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace">${esc(l.bet)}</div>
-        ${l.player ? `<div style="font-size:0.6rem;color:var(--muted2);font-family:'DM Mono',monospace">👤 ${esc(l.player)}${l.pteam?` (${esc(l.pteam)})`:''}</div>` : ''}
-        ${l.comp ? `<div style="font-size:0.6rem;color:var(--muted)">${esc(l.comp)}</div>` : ''}
-        <div class="pcard-actions" style="margin-top:0.3rem">
+      <div${i > 0 ? ' style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid var(--border)"' : ''}>
+        <div class="pcard-event"${i > 0 ? ' style="padding-right:0"' : ''}>${esc(l.p1)} <span style="color:var(--muted);font-size:0.72rem">vs</span> ${esc(l.p2)}</div>
+        <div class="pcard-bet">${esc(l.bet)}</div>
+        ${l.player ? `<div style="margin-top:0.25rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted2)">👤 ${esc(l.player)}${l.pteam?` <span style="color:var(--muted)">(${esc(l.pteam)})</span>`:''}</div>` : ''}
+        <div class="pcard-actions" style="margin-top:0.5rem">
           ${window.isAdmin ? `
           <button class="abtn win" onclick="quickResolveLeg('${b.id}',${i},'Win')">✅</button>
           <button class="abtn los" onclick="quickResolveLeg('${b.id}',${i},'Lost')">❌</button>
           <button class="abtn"     onclick="quickResolveLeg('${b.id}',${i},'Void')">↩️</button>
           ` : ''}
-          <span style="margin-left:0.3rem;font-size:0.75rem">${LEG_ICON[l.result]}</span>
+          <span style="font-size:0.8rem">${LEG_ICON[l.result]}</span>
         </div>
       </div>`).join('');
 
     return `<div class="pcard" style="--pc:${SC[b.sport]}">
       <div class="pcard-tag">⏳ PENDENTE</div>
       <div style="margin-bottom:0.35rem"><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]} ${SL[b.sport]}</span></div>
-      <div class="pcard-event">🧩 Combinada (${(b.legs||[]).length}x)</div>
       ${legsHtml}
       <div class="pcard-footer" style="margin-top:0.7rem">
         <div><div class="pstat-label">Odd Total</div><div class="pstat-val">${b.odds.toFixed(2)}</div></div>
