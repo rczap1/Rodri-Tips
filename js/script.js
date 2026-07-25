@@ -559,8 +559,8 @@ function pendingCard(b) {
           <button class="abtn win" onclick="quickResolveLeg('${b.id}',${i},'Win')">✅</button>
           <button class="abtn los" onclick="quickResolveLeg('${b.id}',${i},'Lost')">❌</button>
           <button class="abtn"     onclick="quickResolveLeg('${b.id}',${i},'Void')">↩️</button>
+          <button class="abtn"     onclick="openModal('${b.id}')">✏️</button>
           ` : ''}
-          <span style="font-size:0.8rem">${LEG_ICON[l.result]}</span>
         </div>
       </div>`).join('');
 
