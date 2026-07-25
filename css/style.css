@@ -379,11 +379,11 @@ main {
 .month-label { font-family: 'DM Mono', monospace; font-size: 0.52rem; color: var(--muted); text-transform: uppercase; }
 
 /* ── PENDING CARDS ── */
+/* Mosaico (multi-column): cada cartão encaixa por baixo do de cima na mesma
+   coluna, em vez de todos ficarem presos à altura do maior da linha (grid). */
 .pending-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 0.9rem;
-  align-items: start;
+  column-width: 300px;
+  column-gap: 0.9rem;
 }
 
 .pcard {
@@ -394,6 +394,8 @@ main {
   position: relative;
   transition: all 0.18s;
   border-left: 3px solid var(--pc, var(--pending));
+  break-inside: avoid;
+  margin-bottom: 0.9rem;
 }
 
 .pcard:hover { transform: translateY(-1px); border-color: var(--border2); }
