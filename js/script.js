@@ -516,8 +516,8 @@ function renderDashboard() {
     </div>`;
   }).join('');
 
-  document.getElementById('dash-pending').innerHTML = pending.slice(0,4).length
-    ? pending.slice(0,4).map(pendingCard).join('')
+  document.getElementById('dash-pending').innerHTML = pending.slice(0,6).length
+    ? pending.slice(0,6).map(pendingCard).join('')
     : '<div class="empty"><div class="empty-icon">🎯</div>Sem apostas pendentes</div>';
 }
 
@@ -559,7 +559,6 @@ function pendingCard(b) {
           <button class="abtn win" onclick="quickResolveLeg('${b.id}',${i},'Win')">✅</button>
           <button class="abtn los" onclick="quickResolveLeg('${b.id}',${i},'Lost')">❌</button>
           <button class="abtn"     onclick="quickResolveLeg('${b.id}',${i},'Void')">↩️</button>
-          <button class="abtn"     onclick="openModal('${b.id}')">✏️</button>
           ` : ''}
         </div>
       </div>`).join('');

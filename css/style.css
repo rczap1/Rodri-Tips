@@ -383,6 +383,7 @@ main {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 0.9rem;
+  align-items: start;
 }
 
 .pcard {
