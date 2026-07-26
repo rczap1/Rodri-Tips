@@ -534,7 +534,7 @@ main {
 .abtn.los:hover { background: #f8717110; }
 
 /* ── TABLE ── */
-.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 .bet-table { width: 100%; border-collapse: collapse; }
 
@@ -562,7 +562,7 @@ main {
 .bet-table tr:hover td { background: #ffffff03; }
 
 /* ── ANALYSIS ── */
-.analysis-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; }
+.analysis-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1.25rem; }
 
 .analysis-header {
   padding: 1rem 1.25rem;
