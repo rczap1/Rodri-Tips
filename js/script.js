@@ -894,6 +894,11 @@ function renderHistory() {
       : (b.p1 && b.p2
           ? `<span style="font-weight:600">${esc(b.p1)}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${esc(b.p2)}</span>`
           : esc(b.event) || '—');
+    // Combinadas não têm bet/comp ao nível do bilhete — resume as seleções
+    const legBets = isCombo ? (b.legs || []).map(l => l.bet).filter(Boolean) : [];
+    const legComps = isCombo ? [...new Set((b.legs || []).map(l => l.comp).filter(Boolean))] : [];
+    const apostaCell = isCombo ? (legBets.join(' + ') || '—') : b.bet;
+    const compCell   = isCombo ? (legComps.length > 1 ? 'Vários' : (legComps[0] || '—')) : (b.comp || '—');
     // Combinadas mostram só o resumo aqui — o detalhe por seleção já está em
     // Análise → Combinadas e nos cartões de Pendentes.
     // Junta jogador/casa numa única 2ª linha, sempre presente (vazia se preciso),
@@ -909,8 +914,8 @@ function renderHistory() {
         <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${confronto}</div>
         ${secondaryLine}
       </td>
-      <td style="max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted2)">${isCombo ? '—' : esc(b.bet)}</td>
-      <td style="font-size:0.67rem;color:var(--muted);font-family:'DM Mono',monospace;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.comp)||'—'}</td>
+      <td style="max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted2)" title="${esc(apostaCell)}">${esc(apostaCell)}</td>
+      <td style="font-size:0.67rem;color:var(--muted);font-family:'DM Mono',monospace;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(compCell)}">${esc(compCell)}</td>
       <td class="mono text-right">${b.units}u</td>
       <td class="mono text-right">${b.odds.toFixed(2)}</td>
       <td><span class="rbadge ${b.result}">${rl}</span></td>

@@ -551,6 +551,8 @@ main {
   font-weight: 400;
 }
 
+.bet-table th.text-right { text-align: right; }
+
 .bet-table td {
   padding: 0.65rem 0.9rem;
   font-size: 0.79rem;
