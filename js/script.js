@@ -1044,7 +1044,10 @@ async function toggleNotifications() {
 
   if (existing) {
     try {
-      await window.supabase.from('push_subscriptions').delete().eq('endpoint', existing.endpoint);
+      const { error } = await window.supabase.functions.invoke('subscribe-push', {
+        body: { action: 'unsubscribe', endpoint: existing.endpoint },
+      });
+      if (error) throw error;
       await existing.unsubscribe();
       snack('🔕 Notificações desativadas');
     } catch (e) { snack('⚠️ Erro ao desativar: ' + e.message); }
@@ -1061,10 +1064,14 @@ async function toggleNotifications() {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
     const json = sub.toJSON();
-    const { error } = await window.supabase.from('push_subscriptions').upsert({
-      endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth,
-    }, { onConflict: 'endpoint' });
+    // A escrita em push_subscriptions passa pela Edge Function `subscribe-push`
+    // (chave admin) em vez de ir direta à tabela — assim não precisa de
+    // nenhuma política pública de RLS na tabela.
+    const { data, error } = await window.supabase.functions.invoke('subscribe-push', {
+      body: { endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth },
+    });
     if (error) throw error;
+    if (data?.error) throw new Error(data.error);
     snack('🔔 Notificações ativadas!');
   } catch (e) {
     snack('⚠️ Erro ao ativar: ' + e.message);

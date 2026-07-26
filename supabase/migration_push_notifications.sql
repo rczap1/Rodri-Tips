@@ -19,18 +19,11 @@ create table if not exists public.push_subscriptions (
 
 alter table public.push_subscriptions enable row level security;
 
--- Qualquer visitante pode registar a própria subscrição
-create policy "push_subs_insert_public"
-  on public.push_subscriptions for insert
-  with check (true);
-
--- Qualquer visitante pode remover a própria subscrição (desativar), pelo endpoint
-create policy "push_subs_delete_public"
-  on public.push_subscriptions for delete
-  using (true);
-
--- Sem policy de select público — só a Edge Function (chave admin, ignora RLS)
--- lê a lista completa para enviar os pushes.
+-- Sem NENHUMA política pública (insert/update/select/delete) — o browser
+-- nunca mexe diretamente nesta tabela. Todas as escritas passam pela Edge
+-- Function `subscribe-push` (chave admin, ignora RLS) e as leituras para
+-- enviar os pushes passam pela `send-push` (também chave admin).
+-- Ver supabase/functions/subscribe-push/index.ts e js/script.js (toggleNotifications).
 
 -- 2. Funções que chamam a Edge Function `send-push` via pg_net diretamente
 -- (mesmo mecanismo já usado no Telegram — não depende do schema

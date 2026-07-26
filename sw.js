@@ -46,7 +46,12 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(req)
       .then(res => {
-        if (res.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, res.clone()));
+        // clone tem de ser síncrono aqui — se esperarmos pelo caches.open()
+        // (assíncrono) antes de clonar, o browser já pode ter começado a
+        // consumir o body de "res" para entregar à página, e o clone falha
+        // com "Response body is already used"
+        const resToCache = res.clone();
+        if (res.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, resToCache));
         return res;
       })
       .catch(() => caches.match(req))

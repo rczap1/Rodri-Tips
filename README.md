@@ -70,6 +70,7 @@ estar no frontend):
    npx supabase@latest login
    npx supabase@latest link --project-ref <o-teu-project-ref>
    npx supabase@latest functions deploy send-push --no-verify-jwt
+   npx supabase@latest functions deploy subscribe-push
    npx supabase@latest secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... WEBHOOK_SECRET=...
    ```
    (`WEBHOOK_SECRET` é uma string aleatória à tua escolha — serve para o
