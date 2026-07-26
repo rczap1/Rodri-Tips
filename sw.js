@@ -4,14 +4,21 @@
    + notificações push (ver Supabase Edge Function send-push)
    ═══════════════════════════════════════════ */
 
-const CACHE_NAME = 'rodri-tips-v2';
+const CACHE_NAME = 'rodri-tips-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
   './css/style.css',
   './js/script.js',
-  './favicon.png',
   './manifest.json',
+  './favicon-16.png',
+  './favicon-32.png',
+  './favicon-48.png',
+  './apple-touch-icon-180.png',
+  './pwa-icon-192.png',
+  './pwa-icon-512.png',
+  './pwa-maskable-192.png',
+  './pwa-maskable-512.png',
 ];
 
 self.addEventListener('install', event => {
@@ -66,8 +73,8 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: './favicon.png',
-      badge: './favicon.png',
+      icon: './pwa-icon-192.png',
+      badge: './favicon-48.png',
       data: { url: data.url },
     })
   );
