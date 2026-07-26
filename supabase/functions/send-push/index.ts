@@ -4,17 +4,14 @@
 // supabase/migration_push_notifications.sql) e envia notificações push a
 // todos os browsers subscritos em `push_subscriptions`.
 //
-// ⚠️ A parte de envio (jsr:@negrel/webpush) é a menos testada deste projeto —
-// antes de fazer deploy real, testa localmente:
-//   npx supabase functions serve send-push --no-verify-jwt
-//   curl -X POST http://localhost:54321/functions/v1/send-push \
-//     -H "Content-Type: application/json" -H "x-webhook-secret: <o teu secret>" \
-//     -d '{"type":"INSERT","table":"bets","record":{"sport":"Tennis","p1":"A","p2":"B","bet":"ML","odds":1.8,"units":1,"result":"Pending","bet_type":"simple"}}'
-// Se `jsr:@negrel/webpush` falhar no runtime, o fallback documentado é
-// `npm:web-push` (API diferente: setVapidDetails + sendNotification).
+// Usa `npm:web-push` — mesma biblioteca usada para gerar as chaves VAPID
+// (`npx web-push generate-vapid-keys`), por isso o formato das chaves bate
+// certo. (Já tentámos `jsr:@negrel/webpush` primeiro; falhava em runtime com
+// "Failed to execute 'importKey'" porque espera as chaves em formato JWK,
+// não no formato base64url que o `web-push` gera.)
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import * as webpush from "jsr:@negrel/webpush";
+import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL   = Deno.env.get("SUPABASE_URL")!;
 // Projeto usa o novo sistema de chaves (confirmado no painel "Connect to your
@@ -113,24 +110,20 @@ Deno.serve(async (req) => {
   const { title, body } = buildMessage(payload);
   const message = JSON.stringify({ title, body, url: './#pending' });
 
-  const vapidKeys = await webpush.importVapidKeys({
-    publicKey:  VAPID_PUBLIC_KEY,
-    privateKey: VAPID_PRIVATE_KEY,
-  });
-  const appServer = await webpush.ApplicationServer.new({
-    contactInformation: 'mailto:rodrigofcarvalho421@gmail.com',
-    vapidKeys,
-  });
+  webpush.setVapidDetails(
+    'mailto:rodrigofcarvalho421@gmail.com',
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY,
+  );
 
   const results = await Promise.allSettled((subs ?? []).map(async (sub) => {
-    const subscriber = appServer.subscribe({
-      endpoint: sub.endpoint,
-      keys: { p256dh: sub.p256dh, auth: sub.auth },
-    });
     try {
-      await subscriber.pushTextMessage(message, {});
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        message,
+      );
     } catch (e: any) {
-      if (e?.status === 404 || e?.status === 410) {
+      if (e?.statusCode === 404 || e?.statusCode === 410) {
         await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
       }
       throw e;
