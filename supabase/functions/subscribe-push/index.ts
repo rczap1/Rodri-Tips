@@ -16,7 +16,7 @@ const SERVICE_KEY  = Deno.env.get("SUPABASE_SECRET_KEY") ?? Deno.env.get("SUPABA
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
