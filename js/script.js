@@ -1032,11 +1032,14 @@ async function refreshNotifyButton() {
     btn.style.display = 'none';
     return;
   }
-  btn.style.display = 'block';
+  btn.style.display = 'flex';
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    btn.textContent = sub ? '🔕 Notificações ativas' : '🔔 Notificações';
+    // 🔔 (sem traço) = ativas · 🔕 (com traço) = desativadas
+    btn.textContent = sub ? '🔔' : '🔕';
+    btn.title = sub ? 'Notificações ativas — clica para desativar' : 'Ativar notificações';
+    btn.setAttribute('aria-label', btn.title);
     btn.classList.toggle('active', !!sub);
   } catch (e) { /* SW ainda não pronto, tenta na próxima */ }
 }

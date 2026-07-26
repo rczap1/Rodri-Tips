@@ -27,7 +27,11 @@ self.addEventListener('install', event => {
       // cache:'reload' ignora o cache HTTP do browser ao popular a cache do
       // service worker — sem isto, um deploy novo podia ficar preso a
       // ficheiros antigos se o servidor não mandar cabeçalhos de cache claros.
-      .then(cache => Promise.all(CORE_ASSETS.map(url => fetch(url, { cache: 'reload' }).then(res => cache.put(url, res)))))
+      // Cada ficheiro falha por si só (.catch) — um asset em falta não deve
+      // impedir a instalação do resto da app.
+      .then(cache => Promise.all(CORE_ASSETS.map(url =>
+        fetch(url, { cache: 'reload' }).then(res => cache.put(url, res)).catch(() => {})
+      )))
       .then(() => self.skipWaiting())
   );
 });
