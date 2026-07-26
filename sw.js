@@ -51,7 +51,10 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(req)
+    // cache:'no-store' ignora o Cache-Control do GitHub Pages (max-age=600) —
+    // sem isto, "network-first" ainda podia devolver uma resposta antiga
+    // guardada pelo próprio browser até o max-age expirar.
+    fetch(req, { cache: 'no-store' })
       .then(res => {
         // clone tem de ser síncrono aqui — se esperarmos pelo caches.open()
         // (assíncrono) antes de clonar, o browser já pode ter começado a
