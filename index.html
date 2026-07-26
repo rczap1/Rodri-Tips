@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rodri Tips</title>
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#aaee33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rodri Tips">
+<link rel="apple-touch-icon" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -29,6 +35,8 @@
   </div>
 
   <div class="nav-right">
+    <button class="btn-neutral" id="btn-install" onclick="installApp()" style="display:none">📲 Instalar</button>
+    <button class="btn-neutral" id="btn-notify" onclick="toggleNotifications()" style="display:none">🔔 Notificações</button>
     <div class="unit-display" onclick="openUnitModal()" id="unit-label" title="Clica para alterar o valor da unidade">1u = 10€</div>
     <button class="btn-add" id="btn-nova-aposta" onclick="openModal()">+ Nova Aposta</button>
     <button class="btn-add" id="btn-login" onclick="openLoginModal()" style="display:none">Login</button>
@@ -372,6 +380,9 @@
   const SUPABASE_URL      = 'https://lndmksifebnxuknfzdbw.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_KdLcumQX02MYx3RkiBe-RA_7s3702rb';
   const ADMIN_EMAIL       = 'rodrigofcarvalho421@gmail.com';
+  // Chave pública VAPID — segura para expor (só a privada, guardada como
+  // secret na Edge Function, permite enviar notificações). Ver README.md.
+  const VAPID_PUBLIC_KEY  = 'BD9V03HQYI7ewqrn7ZDWs-fWlME8I7mCHB0tKNsALT38T212VBpI8z5nl2SIfIkuB2SMvW9L0AuMIn3SC2cqDh0';
 
   window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

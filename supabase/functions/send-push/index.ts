@@ -1,0 +1,144 @@
+// Rodri Tips — Edge Function: send-push
+//
+// Recebe o payload de um Database Webhook (trigger em `public.bets`, ver
+// supabase/migration_push_notifications.sql) e envia notificações push a
+// todos os browsers subscritos em `push_subscriptions`.
+//
+// ⚠️ A parte de envio (jsr:@negrel/webpush) é a menos testada deste projeto —
+// antes de fazer deploy real, testa localmente:
+//   npx supabase functions serve send-push --no-verify-jwt
+//   curl -X POST http://localhost:54321/functions/v1/send-push \
+//     -H "Content-Type: application/json" -H "x-webhook-secret: <o teu secret>" \
+//     -d '{"type":"INSERT","table":"bets","record":{"sport":"Tennis","p1":"A","p2":"B","bet":"ML","odds":1.8,"units":1,"result":"Pending","bet_type":"simple"}}'
+// Se `jsr:@negrel/webpush` falhar no runtime, o fallback documentado é
+// `npm:web-push` (API diferente: setVapidDetails + sendNotification).
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+import * as webpush from "jsr:@negrel/webpush";
+
+const SUPABASE_URL   = Deno.env.get("SUPABASE_URL")!;
+// Projeto usa o novo sistema de chaves (confirmado no painel "Connect to your
+// project" do Dashboard: SUPABASE_SECRET_KEY) — cai para o nome legado só por
+// segurança, caso o projeto seja migrado de volta.
+const SERVICE_KEY    = Deno.env.get("SUPABASE_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const WEBHOOK_SECRET = Deno.env.get("WEBHOOK_SECRET");
+const VAPID_PUBLIC_KEY  = Deno.env.get("VAPID_PUBLIC_KEY")!;
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
+
+const SPORT_ICON: Record<string, string> = { Tennis: '🎾', Handball: '🤾', MMA: '🥊', Football: '⚽' };
+const SPORT_LABEL: Record<string, string> = { Tennis: 'Ténis', Handball: 'Andebol', MMA: 'MMA', Football: 'Futebol' };
+const RESULT_ICON: Record<string, string> = { Win: '✅', Lost: '❌', Void: '↩️' };
+const RESULT_LABEL: Record<string, string> = { Win: 'Aposta Ganha', Lost: 'Aposta Perdida', Void: 'Aposta Anulada' };
+const LEG_ICON: Record<string, string> = { Win: '✅', Lost: '❌', Void: '↩️', Pending: '⏳' };
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function legLine(leg: any, withIcon: boolean) {
+  const prefix = withIcon ? `${LEG_ICON[leg.result] ?? '⏳'} ` : '';
+  const compSuffix = leg.comp ? ` (${leg.comp})` : '';
+  return `${prefix}${leg.p1} vs ${leg.p2} — ${leg.bet}${compSuffix}`;
+}
+
+// Mesma informação que as mensagens de Telegram (ver
+// supabase/migration_telegram_notifications.sql) — só omite dinheiro (€).
+function buildMessage(payload: any) {
+  const record = payload.record;
+  const icon = SPORT_ICON[record.sport] ?? '🏆';
+  const sportLabel = SPORT_LABEL[record.sport] ?? record.sport;
+  const isCombo = record.bet_type === 'combo';
+
+  if (payload.type === 'INSERT') {
+    const potential = round2(record.units * record.odds);
+
+    if (isCombo) {
+      const legsText = (record.legs ?? []).map((l: any) => legLine(l, false)).join('\n');
+      let body = `${legsText}\nOdd Total @${record.odds} · ${record.units}u`;
+      if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
+      body += `\n📈 Retorno potencial: ${potential}u`;
+      return { title: `🧩 Nova combinada — ${icon} ${sportLabel}`, body };
+    }
+
+    let body = `${record.p1} vs ${record.p2}\n${record.bet} @${record.odds} · ${record.units}u`;
+    if (record.comp) body += `\n🏆 ${record.comp}`;
+    if (record.player) body += `\n👤 ${record.player}${record.pteam ? ` (${record.pteam})` : ''}`;
+    if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
+    body += `\n📈 Retorno potencial: ${potential}u`;
+    return { title: `🎯 Nova aposta — ${icon} ${sportLabel}`, body };
+  }
+
+  // UPDATE → aposta resolvida
+  const ic = RESULT_ICON[record.result] ?? '';
+  const label = RESULT_LABEL[record.result] ?? record.result;
+  const profit = record.result === 'Win' ? round2(record.units * record.odds - record.units)
+    : record.result === 'Lost' ? -record.units : 0;
+  const profitStr = `${profit >= 0 ? '+' : ''}${profit}u`;
+
+  if (isCombo) {
+    const legsText = (record.legs ?? []).map((l: any) => legLine(l, true)).join('\n');
+    let body = `${legsText}\nOdd Total @${record.odds} · ${record.units}u`;
+    if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
+    body += `\n📊 Resultado: ${profitStr}`;
+    return { title: `${ic} ${label} — Combinada ${icon} ${sportLabel}`, body };
+  }
+
+  let body = `${record.p1} vs ${record.p2}\n${record.bet} @${record.odds} · ${record.units}u`;
+  if (record.comp) body += `\n🏆 ${record.comp}`;
+  if (record.player) body += `\n👤 ${record.player}${record.pteam ? ` (${record.pteam})` : ''}`;
+  if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
+  body += `\n📊 Resultado: ${profitStr}`;
+  return { title: `${ic} ${label} — ${icon} ${sportLabel}`, body };
+}
+
+Deno.serve(async (req) => {
+  if (WEBHOOK_SECRET && req.headers.get('x-webhook-secret') !== WEBHOOK_SECRET) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const payload = await req.json().catch(() => null);
+  const record = payload?.record;
+  if (!record) return new Response('Payload sem record', { status: 400 });
+
+  // Segurança extra: só notifica INSERTs realmente Pending (backfills
+  // históricos já entram resolvidos e não devem gerar notificação)
+  if (payload.type === 'INSERT' && record.result !== 'Pending') {
+    return new Response('Ignorado (não é Pending)', { status: 200 });
+  }
+
+  const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const { data: subs, error } = await supabaseAdmin.from('push_subscriptions').select('*');
+  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+
+  const { title, body } = buildMessage(payload);
+  const message = JSON.stringify({ title, body, url: './#pending' });
+
+  const vapidKeys = await webpush.importVapidKeys({
+    publicKey:  VAPID_PUBLIC_KEY,
+    privateKey: VAPID_PRIVATE_KEY,
+  });
+  const appServer = await webpush.ApplicationServer.new({
+    contactInformation: 'mailto:rodrigofcarvalho421@gmail.com',
+    vapidKeys,
+  });
+
+  const results = await Promise.allSettled((subs ?? []).map(async (sub) => {
+    const subscriber = appServer.subscribe({
+      endpoint: sub.endpoint,
+      keys: { p256dh: sub.p256dh, auth: sub.auth },
+    });
+    try {
+      await subscriber.pushTextMessage(message, {});
+    } catch (e: any) {
+      if (e?.status === 404 || e?.status === 410) {
+        await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+      }
+      throw e;
+    }
+  }));
+
+  const sent = results.filter(r => r.status === 'fulfilled').length;
+  return new Response(JSON.stringify({ sent, total: (subs ?? []).length }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+});

@@ -1,0 +1,86 @@
+/* ═══════════════════════════════════════════
+   RODRI TIPS — service worker
+   Cache do "app shell" para experiência PWA/offline básica
+   + notificações push (ver Supabase Edge Function send-push)
+   ═══════════════════════════════════════════ */
+
+const CACHE_NAME = 'rodri-tips-v2';
+const CORE_ASSETS = [
+  './',
+  './index.html',
+  './css/style.css',
+  './js/script.js',
+  './favicon.png',
+  './manifest.json',
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      // cache:'reload' ignora o cache HTTP do browser ao popular a cache do
+      // service worker — sem isto, um deploy novo podia ficar preso a
+      // ficheiros antigos se o servidor não mandar cabeçalhos de cache claros.
+      .then(cache => Promise.all(CORE_ASSETS.map(url => fetch(url, { cache: 'reload' }).then(res => cache.put(url, res)))))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+// Só intercetamos GETs do próprio site (app shell). Pedidos a outras origens
+// (Supabase, Google Fonts, etc.) seguem direto para a rede — não queremos
+// cachear dados de apostas nem arriscar servir respostas antigas da API.
+//
+// Network-first: tenta sempre a rede primeiro (para nunca ficar preso a uma
+// versão antiga depois de um deploy) — só usa a cache quando está offline.
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+
+  event.respondWith(
+    fetch(req)
+      .then(res => {
+        if (res.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, res.clone()));
+        return res;
+      })
+      .catch(() => caches.match(req))
+  );
+});
+
+// ── PUSH NOTIFICATIONS ───────────────────────
+self.addEventListener('push', event => {
+  let data = { title: 'Rodri Tips', body: 'Nova atualização.', url: './#pending' };
+  try { data = { ...data, ...event.data.json() }; } catch (e) { /* payload não é JSON, usa defaults */ }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: './favicon.png',
+      badge: './favicon.png',
+      data: { url: data.url },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || './', self.location).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(targetUrl);
+    })
+  );
+});

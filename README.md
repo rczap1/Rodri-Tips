@@ -23,18 +23,86 @@ O site fica em `https://rczap1.github.io/Rodri-Tips/`.
 
 ---
 
+## 📲 PWA (instalar como app)
+
+O site é instalável (manifest.json + service worker):
+
+- **Android/desktop (Chrome/Edge)**: aparece um botão "📲 Instalar" na nav quando o
+  browser deteta que dá para instalar.
+- **iPhone (Safari)**: não há botão automático — Safari não suporta essa API.
+  Aparece uma dica na primeira visita a explicar: **Partilhar → Adicionar ao
+  Ecrã Principal**. É este passo que permite mais tarde receber notificações
+  push no iOS (ver abaixo).
+
+Não precisa de nenhum setup extra — funciona assim que o `index.html`, o
+`manifest.json` e o `sw.js` estão publicados.
+
+## 🔔 Notificações — Telegram (canal principal, recomendado)
+
+Avisa automaticamente um canal/grupo de Telegram sempre que colocas uma
+aposta nova (Pending) ou resolves uma pendente (Win/Lost/Void). Não precisa
+de Edge Function nem deploy — é só SQL correndo no Supabase.
+
+1. Fala com **@BotFather** no Telegram → `/newbot` → dá-te o **BOT_TOKEN**.
+2. Cria um canal ou grupo, adiciona o bot como admin.
+3. Envia uma mensagem qualquer no canal, depois visita
+   `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates` no browser e procura
+   `"chat":{"id": ...}` — esse número é o **CHAT_ID** (alternativa: usar
+   `@myidbot`/`@userinfobot`).
+4. Abre [`supabase/migration_telegram_notifications.sql`](supabase/migration_telegram_notifications.sql),
+   substitui `<BOT_TOKEN>` e `<CHAT_ID>` (só na cópia que colas no SQL
+   Editor — **não faças commit** dos valores reais) e corre o ficheiro.
+
+Pronto — a partir daí, cada aposta nova/resolvida cai automaticamente no canal.
+
+## 🔔 Notificações — Push no browser (extra opcional)
+
+Além do Telegram, quem instalar a PWA (ver acima) pode ativar notificações
+nativas do browser/telemóvel clicando em "🔔 Notificações" na nav. Esta parte
+já precisa de uma Edge Function (o envio exige uma chave privada que não pode
+estar no frontend):
+
+1. Gera um par de chaves VAPID: `npx web-push generate-vapid-keys`.
+2. Cola a chave pública em [`index.html`](index.html), na constante
+   `VAPID_PUBLIC_KEY` (procura por `<VAPID_PUBLIC_KEY>`).
+3. Faz login/link e deploy da function:
+   ```bash
+   npx supabase@latest login
+   npx supabase@latest link --project-ref <o-teu-project-ref>
+   npx supabase@latest functions deploy send-push --no-verify-jwt
+   npx supabase@latest secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... WEBHOOK_SECRET=...
+   ```
+   (`WEBHOOK_SECRET` é uma string aleatória à tua escolha — serve para o
+   trigger SQL provar à function que o pedido é legítimo.)
+4. Abre [`supabase/migration_push_notifications.sql`](supabase/migration_push_notifications.sql),
+   substitui `<PROJECT-REF>` e `<WEBHOOK_SECRET>` (mesmo cuidado: só na cópia
+   colada no SQL Editor, nunca commitar os valores reais) e corre o ficheiro.
+
+Testa a function localmente antes do deploy real com
+`npx supabase functions serve send-push --no-verify-jwt` + `curl` (exemplo em
+comentário no topo de `supabase/functions/send-push/index.ts`).
+
+---
+
 ## 📁 Estrutura do Projeto
 
 ```
 Rodri-Tips/
 │
-├── index.html              # HTML principal (nav, páginas, modais)
-├── css/style.css           # Estilos
-├── js/script.js            # Lógica da app (dados, render, auth)
-├── server.py                # Servidor local só para testes
+├── index.html                            # HTML principal (nav, páginas, modais)
+├── manifest.json                         # Manifest da PWA
+├── sw.js                                 # Service worker (cache offline + push)
+├── css/style.css                         # Estilos
+├── js/script.js                          # Lógica da app (dados, render, auth, PWA, push)
+├── server.py                             # Servidor local só para testes
 └── supabase/
-    ├── schema.sql           # Cria a tabela `bets` do zero + RLS
-    └── migration_combo.sql  # Migração para quem já tinha a tabela antiga
+    ├── schema.sql                        # Cria a tabela `bets` do zero + RLS
+    ├── migration_combo.sql               # Migração: apostas combinadas
+    ├── migration_bookmaker.sql           # Migração: casa de apostas
+    ├── migration_settings.sql            # Migração: valor da unidade partilhado
+    ├── migration_telegram_notifications.sql  # Migração: avisos via Telegram
+    ├── migration_push_notifications.sql      # Migração: notificações push (opcional)
+    └── functions/send-push/index.ts      # Edge Function que envia o push (opcional)
 ```
 
 ## Design System (Paleta & Botões)

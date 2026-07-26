@@ -162,6 +162,12 @@ nav {
   background: #ffffff08;
 }
 
+.btn-neutral.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #aaee3312;
+}
+
 /* ── LAYOUT ── */
 main {
   max-width: 1280px;

@@ -1,0 +1,25 @@
+{
+  "name": "Rodri Tips — Bet Tracker",
+  "short_name": "Rodri Tips",
+  "description": "Bet tracker pessoal — Ténis, Andebol, MMA e Futebol",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#aaee33",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "360x360",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "360x360",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

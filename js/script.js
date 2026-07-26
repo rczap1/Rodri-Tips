@@ -950,3 +950,128 @@ function snack(msg) {
 
 document.getElementById('bet-overlay').addEventListener('click',  e => { if (e.target === e.currentTarget) closeModal('bet-overlay'); });
 document.getElementById('unit-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('unit-overlay'); });
+
+// ══════════════════════════════════════════
+// PWA — service worker + instalação
+// ══════════════════════════════════════════
+let deferredInstallPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.error('Erro ao registar service worker:', e));
+  });
+}
+
+// Chrome/Edge/Android disparam este evento quando a PWA é instalável
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = 'block';
+});
+
+async function installApp() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('btn-install').style.display = 'none';
+  deferredInstallPrompt = null;
+}
+
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = 'none';
+  deferredInstallPrompt = null;
+});
+
+// iOS/Safari não disparam beforeinstallprompt — não há forma automática de
+// instalar, por isso mostramos uma dica manual (só uma vez por browser)
+function isIosInstallEligible() {
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  return isIos && !isStandalone;
+}
+
+if (isIosInstallEligible() && !localStorage.getItem('iosInstallHintShown')) {
+  setTimeout(() => {
+    snack('📲 Adiciona ao Ecrã Principal (Partilhar → Adicionar) para instalar a app');
+    localStorage.setItem('iosInstallHintShown', '1');
+  }, 1500);
+}
+
+// Clique numa notificação (#pending) ou link direto abre já nos Pendentes
+if (location.hash === '#pending') {
+  const pendingNavBtn = document.querySelectorAll('.nav-main button')[1];
+  goTo('pending', pendingNavBtn || null);
+}
+
+// ══════════════════════════════════════════
+// PUSH NOTIFICATIONS (extra opcional — o canal principal é o Telegram)
+// ══════════════════════════════════════════
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+function pushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+async function refreshNotifyButton() {
+  const btn = document.getElementById('btn-notify');
+  if (!btn) return;
+  // Escondido até o VAPID_PUBLIC_KEY real ser configurado, e no iOS antes de instalar
+  if (!pushSupported() || VAPID_PUBLIC_KEY.startsWith('<') || isIosInstallEligible()) {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'block';
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    btn.textContent = sub ? '🔕 Notificações ativas' : '🔔 Notificações';
+    btn.classList.toggle('active', !!sub);
+  } catch (e) { /* SW ainda não pronto, tenta na próxima */ }
+}
+
+async function toggleNotifications() {
+  if (!pushSupported()) { snack('⚠️ O teu browser não suporta notificações push'); return; }
+
+  const reg = await navigator.serviceWorker.ready;
+  const existing = await reg.pushManager.getSubscription();
+
+  if (existing) {
+    try {
+      await window.supabase.from('push_subscriptions').delete().eq('endpoint', existing.endpoint);
+      await existing.unsubscribe();
+      snack('🔕 Notificações desativadas');
+    } catch (e) { snack('⚠️ Erro ao desativar: ' + e.message); }
+    refreshNotifyButton();
+    return;
+  }
+
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { snack('⚠️ Permissão de notificações recusada'); return; }
+
+  try {
+    const sub  = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    const json = sub.toJSON();
+    const { error } = await window.supabase.from('push_subscriptions').upsert({
+      endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth,
+    }, { onConflict: 'endpoint' });
+    if (error) throw error;
+    snack('🔔 Notificações ativadas!');
+  } catch (e) {
+    snack('⚠️ Erro ao ativar: ' + e.message);
+  }
+  refreshNotifyButton();
+}
+
+if (pushSupported()) {
+  navigator.serviceWorker.ready.then(refreshNotifyButton).catch(() => {});
+}
