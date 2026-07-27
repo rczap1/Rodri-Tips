@@ -618,6 +618,8 @@ function setAnalysisTab(sport, btn) {
   analysisSport = sport;
   document.querySelectorAll('#analysis-sport-tabs .sport-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  const entityTab = document.getElementById('analysis-tab-entity');
+  if (entityTab) entityTab.textContent = sport === 'MMA' ? '👤 Lutadores' : '👤 Jogadores';
   renderAnalysis();
 }
 
@@ -672,7 +674,7 @@ function renderAnalysis() {
 
   // Helper: check if a label is a market type (not an entity)
   const isMarketType = (label) => {
-    return /^(Over|Under|ML|Handicap|KO\/TKO|BTTS|Mercado)$/.test(label);
+    return /^(Ases|Over|Under|ML|Handicap|KO\/TKO|BTTS|Mercado)$/.test(label);
   };
 
   if (analysisMode === 'entity') {
