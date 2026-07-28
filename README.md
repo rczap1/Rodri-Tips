@@ -6,8 +6,11 @@ O site guarda as apostas no [Supabase](https://supabase.com) (Postgres + Auth), 
 publicamente em modo leitura — só o admin (login) pode criar/editar/apagar.
 
 1. Cria um projeto grátis em supabase.com.
-2. No SQL Editor, corre o ficheiro [`supabase/schema.sql`](supabase/schema.sql) (cria a
-   tabela `bets` e as políticas de segurança — RLS).
+2. No SQL Editor, corre o ficheiro [`supabase/schema.sql`](supabase/schema.sql) — já
+   inclui tudo (tabela `bets`, `settings`, combinadas, casa de apostas) para uma
+   instalação de raiz. Os ficheiros em `supabase/migrations_antigas/` só servem
+   para quem já tinha o projeto antes dessas colunas existirem — não são
+   precisos numa instalação nova.
 3. Em Authentication → Users, cria o utilizador admin com o teu email e uma password.
 4. Em Settings → API, copia o **Project URL** e a **anon public key**.
 5. Cola-os em [`index.html`](index.html), nas constantes `SUPABASE_URL` e `SUPABASE_ANON_KEY`
@@ -97,13 +100,14 @@ Rodri-Tips/
 ├── js/script.js                          # Lógica da app (dados, render, auth, PWA, push)
 ├── server.py                             # Servidor local só para testes
 └── supabase/
-    ├── schema.sql                        # Cria a tabela `bets` do zero + RLS
-    ├── migration_combo.sql               # Migração: apostas combinadas
-    ├── migration_bookmaker.sql           # Migração: casa de apostas
-    ├── migration_settings.sql            # Migração: valor da unidade partilhado
+    ├── schema.sql                        # Schema completo — usar numa instalação nova
     ├── migration_telegram_notifications.sql  # Migração: avisos via Telegram
+    ├── migration_telegram_monthly_recap.sql   # Migração: balanço mensal no Telegram
     ├── migration_push_notifications.sql      # Migração: notificações push (opcional)
-    └── functions/send-push/index.ts      # Edge Function que envia o push (opcional)
+    ├── functions/send-push/index.ts      # Edge Function que envia o push (opcional)
+    ├── functions/subscribe-push/index.ts # Edge Function que regista subscrições push
+    └── migrations_antigas/               # Só para quem já tinha o projeto antes
+                                           # destas colunas existirem no schema.sql
 ```
 
 ## Design System (Paleta & Botões)

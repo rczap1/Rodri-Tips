@@ -957,6 +957,73 @@ function snack(msg) {
 
 document.getElementById('bet-overlay').addEventListener('click',  e => { if (e.target === e.currentTarget) closeModal('bet-overlay'); });
 document.getElementById('unit-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('unit-overlay'); });
+document.getElementById('settings-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('settings-overlay'); });
+
+// ══════════════════════════════════════════
+// DEFINIÇÕES — exportar CSV
+// ══════════════════════════════════════════
+function openSettingsModal() {
+  document.getElementById('settings-overlay').classList.add('open');
+}
+
+function csvEscape(v) {
+  const s = String(v ?? '');
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function exportCSV() {
+  const headers = ['Data','Desporto','Tipo','Confronto/Seleções','Aposta/Mercado','Competição','Jogador','Equipa do Jogador','Casa de Apostas','Units','Odd','Resultado','Lucro (u)','Lucro (€)'];
+
+  const rows = [...bets].sort((a, b) => a.date.localeCompare(b.date)).map(b => {
+    const isCombo = b.bet_type === 'combo';
+    const net = calcNet(b);
+    const confronto = isCombo
+      ? `Combinada (${(b.legs || []).length}x)`
+      : (b.p1 && b.p2 ? `${b.p1} vs ${b.p2}` : (b.event || ''));
+    const legBets  = isCombo ? (b.legs || []).map(l => l.bet).filter(Boolean) : [];
+    const legComps = isCombo ? [...new Set((b.legs || []).map(l => l.comp).filter(Boolean))] : [];
+    const apostaCell = isCombo ? legBets.join(' + ') : (b.bet || '');
+    const compCell    = isCombo ? (legComps.length > 1 ? 'Vários' : (legComps[0] || '')) : (b.comp || '');
+
+    return [
+      b.date, SL[b.sport] || b.sport, isCombo ? 'Combinada' : 'Simples',
+      confronto, apostaCell, compCell,
+      isCombo ? '' : (b.player || ''), isCombo ? '' : (b.pteam || ''),
+      b.bookmaker || '', b.units, b.odds, b.result,
+      b.result === 'Pending' ? '' : net.toFixed(2),
+      b.result === 'Pending' ? '' : (net * unitVal).toFixed(2),
+    ];
+  });
+
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
+  // BOM no início — sem isto o Excel pode ler os acentos/€ mal em UTF-8
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rodri-tips-apostas-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  snack(`⬇️ CSV exportado (${bets.length} apostas)!`);
+}
+
+function exportJSON() {
+  // Backup fiel — inclui tudo, incluindo as legs completas das combinadas
+  // (o CSV resume isso numa só célula, este ficheiro guarda a estrutura toda).
+  const json = JSON.stringify(bets, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rodri-tips-backup-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  snack(`⬇️ JSON exportado (${bets.length} apostas)!`);
+}
 
 // ══════════════════════════════════════════
 // PWA — service worker + instalação

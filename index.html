@@ -45,6 +45,7 @@
     <button onclick="goTo('pending',this)">Pendentes</button>
     <button onclick="goTo('analysis',this)">Análise</button>
     <button onclick="goTo('history',this)">Histórico</button>
+    <button onclick="openSettingsModal()" title="Definições">⚙️</button>
   </div>
 
   <div class="nav-right">
@@ -353,6 +354,30 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     MODAL: DEFINIÇÕES
+══════════════════════════════════════ -->
+<div class="overlay" id="settings-overlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">⚙️ Definições</div>
+
+    <div id="settings-backup-section" style="display:none">
+      <div class="fg" style="margin-bottom:0.7rem">
+        <label>Exportar dados (só admin)</label>
+        <div class="hint" style="margin-bottom:0.6rem">CSV para Excel/Google Sheets, ou JSON com o detalhe completo (inclui as seleções das combinadas).</div>
+      </div>
+      <div style="display:flex; gap:0.6rem; margin-bottom:1.25rem">
+        <button class="btn-add" style="flex:1" onclick="exportCSV()">⬇️ CSV</button>
+        <button class="btn-add" style="flex:1" onclick="exportJSON()">⬇️ JSON</button>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('settings-overlay')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="snackbar" id="snackbar"></div>
 
 <!-- ══════════════════════════════════════
@@ -410,6 +435,7 @@
     document.getElementById('btn-nova-aposta').style.display = isAdmin ? 'block' : 'none';
     document.getElementById('btn-login').style.display       = isAdmin ? 'none'  : 'block';
     document.getElementById('btn-logout').style.display       = isAdmin ? 'block' : 'none';
+    document.getElementById('settings-backup-section').style.display = isAdmin ? 'block' : 'none';
     document.getElementById('login-overlay').classList.remove('open');
 
     if (user && !isAdmin) {
