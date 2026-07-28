@@ -968,7 +968,7 @@ function openSettingsModal() {
 
 function csvEscape(v) {
   const s = String(v ?? '');
-  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  return /[;",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
 function exportCSV() {
@@ -995,7 +995,9 @@ function exportCSV() {
     ];
   });
 
-  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
+  // ; em vez de , — o Excel em Portugal usa ; como separador de colunas por
+  // definição regional; com , ele juntava tudo numa só coluna ao abrir.
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(';')).join('\r\n');
   // BOM no início — sem isto o Excel pode ler os acentos/€ mal em UTF-8
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
