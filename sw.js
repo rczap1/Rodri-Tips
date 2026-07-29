@@ -81,7 +81,10 @@ self.addEventListener('push', event => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: './pwa-icon-192.png',
-      badge: './favicon-48.png',
+      // Sem "badge": o Android usa só o canal alfa dessa imagem para desenhar
+      // um ícone monocromático pequeno — sem um ficheiro feito de propósito
+      // (silhueta branca em fundo transparente) ele mostra só uma mancha em
+      // branco. Fica só o "icon" (esse já mostra bem).
       data: { url: data.url },
     })
   );
