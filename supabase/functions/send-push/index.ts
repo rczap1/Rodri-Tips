@@ -47,6 +47,13 @@ function buildMessage(payload: any) {
   const isCombo = record.bet_type === 'combo';
 
   if (payload.type === 'INSERT') {
+    // Futuras não revelam nada — mantém a curiosidade, tal como no Telegram
+    if (record.is_future) {
+      let body = 'Consulta o site para veres os detalhes.';
+      if (record.expected_result_date) body += `\n📅 Resultado esperado: ${record.expected_result_date}`;
+      return { title: '🔮 Nova aposta futura!', body, url: './#futures' };
+    }
+
     const potential = round2(record.units * record.odds);
 
     if (isCombo) {
@@ -54,7 +61,7 @@ function buildMessage(payload: any) {
       let body = `${legsText}\nOdd Total @${record.odds} · ${record.units}u`;
       if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
       body += `\n📈 Retorno potencial: ${potential}u`;
-      return { title: `🧩 Nova combinada — ${icon} ${sportLabel}`, body };
+      return { title: `🧩 Nova combinada — ${icon} ${sportLabel}`, body, url: './#pending' };
     }
 
     let body = `${record.p1} vs ${record.p2}\n${record.bet} @${record.odds} · ${record.units}u`;
@@ -62,7 +69,7 @@ function buildMessage(payload: any) {
     if (record.player) body += `\n👤 ${record.player}${record.pteam ? ` (${record.pteam})` : ''}`;
     if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
     body += `\n📈 Retorno potencial: ${potential}u`;
-    return { title: `🎯 Nova aposta — ${icon} ${sportLabel}`, body };
+    return { title: `🎯 Nova aposta — ${icon} ${sportLabel}`, body, url: './#pending' };
   }
 
   // UPDATE → aposta resolvida
@@ -77,7 +84,15 @@ function buildMessage(payload: any) {
     let body = `${legsText}\nOdd Total @${record.odds} · ${record.units}u`;
     if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
     body += `\n📊 Resultado: ${profitStr}`;
-    return { title: `${ic} ${label} — Combinada ${icon} ${sportLabel}`, body };
+    return { title: `${ic} ${label} — Combinada ${icon} ${sportLabel}`, body, url: './#history' };
+  }
+
+  if (record.is_future) {
+    let body = `${record.bet} @${record.odds} · ${record.units}u`;
+    if (record.comp) body += `\n🏆 ${record.comp}`;
+    if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
+    body += `\n📊 Resultado: ${profitStr}`;
+    return { title: `${ic} ${label} — Futura ${icon} ${sportLabel}`, body, url: './#futures' };
   }
 
   let body = `${record.p1} vs ${record.p2}\n${record.bet} @${record.odds} · ${record.units}u`;
@@ -85,7 +100,7 @@ function buildMessage(payload: any) {
   if (record.player) body += `\n👤 ${record.player}${record.pteam ? ` (${record.pteam})` : ''}`;
   if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
   body += `\n📊 Resultado: ${profitStr}`;
-  return { title: `${ic} ${label} — ${icon} ${sportLabel}`, body };
+  return { title: `${ic} ${label} — ${icon} ${sportLabel}`, body, url: './#history' };
 }
 
 Deno.serve(async (req) => {
@@ -107,8 +122,8 @@ Deno.serve(async (req) => {
   const { data: subs, error } = await supabaseAdmin.from('push_subscriptions').select('*');
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
 
-  const { title, body } = buildMessage(payload);
-  const message = JSON.stringify({ title, body, url: './#pending' });
+  const { title, body, url } = buildMessage(payload);
+  const message = JSON.stringify({ title, body, url });
 
   webpush.setVapidDetails(
     'mailto:rodrigofcarvalho421@gmail.com',

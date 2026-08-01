@@ -8,10 +8,10 @@ const SL = { Tennis:'Ténis', Handball:'Andebol', MMA:'MMA', Football:'Futebol' 
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const SPORT_META = {
-  Tennis:  { type:'individual', p1:'Jogador 1',   p2:'Jogador 2',   h1:'Favorito',       h2:'Underdog',          futureLabel: 'Jogador' },
-  Handball:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true, futureLabel: 'Equipa' },
-  MMA:     { type:'individual', p1:'Lutador 1',    p2:'Lutador 2',   h1:'Favorito',       h2:'Underdog',          futureLabel: 'Lutador' },
-  Football:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true, futureLabel: 'Equipa' },
+  Tennis:  { type:'individual', p1:'Jogador 1',   p2:'Jogador 2',   h1:'Favorito',       h2:'Underdog'        },
+  Handball:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
+  MMA:     { type:'individual', p1:'Lutador 1',    p2:'Lutador 2',   h1:'Favorito',       h2:'Underdog'        },
+  Football:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
 };
 
 // ── STATE ────────────────────────────────────
@@ -141,7 +141,7 @@ function selectSport(btn) {
 
 function updateModalForSport(sport) {
   const meta = SPORT_META[sport];
-  document.getElementById('lbl-p1').textContent = isFuture ? (meta.futureLabel || meta.p1) : meta.p1;
+  document.getElementById('lbl-p1').textContent = meta.p1;
   document.getElementById('lbl-p2').textContent = meta.p2;
   // Show/hide player-team row (nunca aplicável a uma futura — não há confronto)
   const teamRow = document.getElementById('player-team-row');
@@ -157,14 +157,15 @@ function updateModalForSport(sport) {
     document.getElementById('f-pteam').value  = '';
   }
 
-  // Modo Futura: esconde o segundo nome + "VS" — só há uma seleção, sem adversário direto
-  const vsRow   = document.getElementById('vs-row');
-  const p2Wrap  = document.getElementById('p2-wrap');
-  const vsBadge = vsRow ? vsRow.querySelector('.vs-badge') : null;
-  if (vsRow)   vsRow.classList.toggle('future-mode', isFuture);
-  if (p2Wrap)  p2Wrap.style.display  = isFuture ? 'none' : '';
-  if (vsBadge) vsBadge.style.display = isFuture ? 'none' : '';
-  if (isFuture) document.getElementById('f-p2').value = '';
+  // Modo Futura: sem confronto — esconde o "vs" todo, só fica a Aposta/Mercado
+  const vsRow = document.getElementById('vs-row');
+  if (vsRow) vsRow.style.display = isFuture ? 'none' : 'grid';
+  if (isFuture) { document.getElementById('f-p1').value = ''; document.getElementById('f-p2').value = ''; }
+
+  const betHint = document.getElementById('hint-bet');
+  if (betHint) betHint.textContent = isFuture
+    ? 'Escreve a aposta toda — ex: "Sporting CP vence a Liga 2026/27"'
+    : 'Preenche o nome apostado e o tipo de mercado';
 
   const futureDateRow = document.getElementById('future-date-row');
   if (futureDateRow) futureDateRow.style.display = isFuture ? 'block' : 'none';
@@ -397,7 +398,7 @@ async function saveBet() {
   }
 
   const comp   = document.getElementById('f-comp').value.trim();
-  const p1     = document.getElementById('f-p1').value.trim();
+  const p1     = isFuture ? '' : document.getElementById('f-p1').value.trim();
   const p2     = isFuture ? '' : document.getElementById('f-p2').value.trim();
   const bet    = document.getElementById('f-bet').value.trim();
   const units  = parseFloat(document.getElementById('f-units').value);
@@ -405,8 +406,8 @@ async function saveBet() {
   const player = isFuture ? '' : document.getElementById('f-player').value.trim();
   const pteam  = isFuture ? '' : document.getElementById('f-pteam').value.trim();
 
-  if (!p1 || (!isFuture && !p2) || !bet || !units || !odds) {
-    snack(isFuture ? '⚠️ Preenche: nome, aposta, units e odd' : '⚠️ Preenche: confronto, aposta, units e odd'); return;
+  if ((!isFuture && (!p1 || !p2)) || !bet || !units || !odds) {
+    snack(isFuture ? '⚠️ Preenche: aposta, units e odd' : '⚠️ Preenche: confronto, aposta, units e odd'); return;
   }
   if (isNaN(units) || units <= 0)  { snack('⚠️ Units inválidas'); return; }
   if (isNaN(odds)  || odds < 1.01) { snack('⚠️ Odd inválida (mín. 1.01)'); return; }
@@ -415,7 +416,7 @@ async function saveBet() {
 
   const obj = {
     date, sport: currentSport, comp,
-    p1, p2: p2 || null, event: isFuture ? p1 : (p1 + ' - ' + p2),
+    p1: p1 || null, p2: p2 || null, event: isFuture ? null : (p1 + ' - ' + p2),
     bet, units, odds, result: selResult,
     player, pteam, bookmaker, bet_type: 'simple', is_future: isFuture,
     expected_result_date: expectedDate,
@@ -506,7 +507,8 @@ function renderDashboard() {
   const closed  = bets.filter(b => b.result !== 'Pending' && b.result !== 'Void');
   const s       = getStats(closed);
   const allS    = getStats(bets.filter(b => b.result !== 'Pending'));
-  const pending = bets.filter(b => b.result === 'Pending');
+  // Futuras têm separador próprio — não contam para a lista/contagem de Pendentes
+  const pending = bets.filter(b => b.result === 'Pending' && !b.is_future);
 
   const pe = document.getElementById('s-profit');
   pe.textContent = (s.profit >= 0 ? '+' : '') + s.profit.toFixed(2) + 'u';
@@ -559,7 +561,8 @@ function setPendingTab(sport, btn) {
 }
 
 function renderPending() {
-  const all = bets.filter(b => b.result === 'Pending');
+  // Futuras têm separador próprio (ver renderFutures) — não aparecem aqui
+  const all = bets.filter(b => b.result === 'Pending' && !b.is_future);
   Object.keys(SI).forEach(s => {
     const el = document.getElementById('pt-' + s);
     if (el) el.textContent = all.filter(b => b.sport === s).length;
@@ -651,8 +654,7 @@ function futureCard(b) {
   return `<div class="pcard" style="--pc:${SC[b.sport]}">
     <div class="pcard-tag">FUTURA</div>
     <div style="margin-bottom:0.35rem"><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]} ${SL[b.sport]}</span></div>
-    <div class="pcard-event">${esc(b.p1) || ''}</div>
-    <div class="pcard-bet">${esc(b.bet)}</div>
+    <div class="pcard-event">${esc(b.bet)}</div>
     ${b.expected_result_date ? `<div style="margin-top:0.25rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted2)">📅 Resultado esperado: ${fmtDate(b.expected_result_date)}</div>` : ''}
     <div class="pcard-footer" style="margin-top:0.7rem">
       <div><div class="pstat-label">Odd</div><div class="pstat-val">${b.odds.toFixed(2)}</div></div>
@@ -691,7 +693,7 @@ function renderFutures() {
         return `<tr>
           <td class="mono text-muted" style="font-size:0.7rem">${fmtDate(b.date)}</td>
           <td><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]}</span></td>
-          <td style="font-size:0.78rem">${esc(b.p1) || ''} — ${esc(b.bet)}</td>
+          <td style="font-size:0.78rem">${esc(b.bet)}</td>
           <td style="font-size:0.72rem;color:var(--muted2);font-family:'DM Mono',monospace">${esc(b.comp) || '—'}</td>
           <td><span class="rbadge ${b.result}">${rl}</span></td>
           <td class="mono text-right ${nc}">${net >= 0 ? '+' : ''}${net.toFixed(2)}u</td>
@@ -979,9 +981,11 @@ function renderHistory() {
     const isCombo = b.bet_type === 'combo';
     const confronto = isCombo
       ? `🧩 Combinada (${(b.legs||[]).length}x)`
-      : (b.p1 && b.p2
-          ? `<span style="font-weight:600">${esc(b.p1)}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${esc(b.p2)}</span>`
-          : esc(b.event) || '—');
+      : b.is_future
+        ? `🔮 Futura`
+        : (b.p1 && b.p2
+            ? `<span style="font-weight:600">${esc(b.p1)}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${esc(b.p2)}</span>`
+            : esc(b.event) || '—');
     // Combinadas não têm bet/comp ao nível do bilhete — resume as seleções
     const legBets = isCombo ? (b.legs || []).map(l => l.bet).filter(Boolean) : [];
     const legComps = isCombo ? [...new Set((b.legs || []).map(l => l.comp).filter(Boolean))] : [];
@@ -1065,7 +1069,9 @@ function exportCSV() {
     const net = calcNet(b);
     const confronto = isCombo
       ? `Combinada (${(b.legs || []).length}x)`
-      : (b.p1 && b.p2 ? `${b.p1} vs ${b.p2}` : (b.event || ''));
+      : b.is_future
+        ? 'Futura'
+        : (b.p1 && b.p2 ? `${b.p1} vs ${b.p2}` : (b.event || ''));
     const legBets  = isCombo ? (b.legs || []).map(l => l.bet).filter(Boolean) : [];
     const legComps = isCombo ? [...new Set((b.legs || []).map(l => l.comp).filter(Boolean))] : [];
     const apostaCell = isCombo ? legBets.join(' + ') : (b.bet || '');
@@ -1161,13 +1167,12 @@ if (isIosInstallEligible() && !localStorage.getItem('iosInstallHintShown')) {
   }, 1500);
 }
 
-// Clique numa notificação (#pending) ou link direto abre já nos Pendentes
-if (location.hash === '#pending') {
-  const pendingNavBtn = document.querySelectorAll('.nav-main button')[1];
-  goTo('pending', pendingNavBtn || null);
-} else if (location.hash === '#futures') {
-  const futuresNavBtn = document.querySelectorAll('.nav-main button')[2];
-  goTo('futures', futuresNavBtn || null);
+// Clique numa notificação (#pending/#futures/#history) ou link direto abre já na página certa
+const HASH_PAGES = { '#pending': 1, '#futures': 2, '#history': 4 };
+if (HASH_PAGES[location.hash] !== undefined) {
+  const page = location.hash.slice(1);
+  const navBtn = document.querySelectorAll('.nav-main button')[HASH_PAGES[location.hash]];
+  goTo(page, navBtn || null);
 }
 
 // ══════════════════════════════════════════

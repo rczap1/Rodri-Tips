@@ -686,9 +686,6 @@ label {
   grid-column: span 2;
 }
 
-/* Aposta Futura — só um nome, sem adversário direto */
-.vs-row.future-mode { grid-template-columns: 1fr; }
-
 .vs-badge {
   font-family: 'Syne', sans-serif;
   font-weight: 800;

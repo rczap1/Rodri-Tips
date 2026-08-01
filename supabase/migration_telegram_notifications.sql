@@ -178,12 +178,12 @@ begin
     );
   else
     if NEW.is_future then
-      -- Futura: só um nome, sem "vs" — e assinala que era uma futura, já
-      -- que a mensagem de "nova aposta" não revelou o quê
+      -- Futura: não há nome de jogador/equipa (só a aposta em texto livre) —
+      -- e assinala que era uma futura, já que a mensagem de "nova aposta"
+      -- não revelou o quê
       msg := format(
-        E'%s %s — Futura %s %s\n%s\n%s @%s · %su',
+        E'%s %s — Futura %s %s\n%s @%s · %su',
         result_icon, result_label, sport_icon, sport_label,
-        coalesce(NEW.p1, '—'),
         coalesce(NEW.bet, '—'), NEW.odds, NEW.units
       );
     else
