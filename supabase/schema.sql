@@ -20,6 +20,8 @@ create table if not exists public.bets (
   bookmaker  text,
   bet_type   text not null default 'simple' check (bet_type in ('simple','combo')),
   legs       jsonb,
+  is_future  boolean not null default false,
+  expected_result_date date,
   created_at timestamptz not null default now()
 );
 

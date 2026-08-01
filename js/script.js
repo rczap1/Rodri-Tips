@@ -8,10 +8,10 @@ const SL = { Tennis:'Ténis', Handball:'Andebol', MMA:'MMA', Football:'Futebol' 
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const SPORT_META = {
-  Tennis:  { type:'individual', p1:'Jogador 1',   p2:'Jogador 2',   h1:'Favorito',       h2:'Underdog'        },
-  Handball:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
-  MMA:     { type:'individual', p1:'Lutador 1',    p2:'Lutador 2',   h1:'Favorito',       h2:'Underdog'        },
-  Football:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
+  Tennis:  { type:'individual', p1:'Jogador 1',   p2:'Jogador 2',   h1:'Favorito',       h2:'Underdog',          futureLabel: 'Jogador' },
+  Handball:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true, futureLabel: 'Equipa' },
+  MMA:     { type:'individual', p1:'Lutador 1',    p2:'Lutador 2',   h1:'Favorito',       h2:'Underdog',          futureLabel: 'Lutador' },
+  Football:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true, futureLabel: 'Equipa' },
 };
 
 // ── STATE ────────────────────────────────────
@@ -25,6 +25,7 @@ let histSport    = 'all', histResult = 'all';
 let pendingSport = 'all';
 let analysisSport = 'Tennis', analysisMode = 'entity';
 let betType   = null; // 'simple' | 'combo'
+let isFuture  = false; // aposta futura (outright) — só válido com betType 'simple'
 let comboLegs = [];
 let bookmaker = null; // 22bet | Betano | Betclic | Bwin | Solverde
 // isAdmin e ADMIN_EMAIL são definidos em index.html (junto da inicialização do Supabase)
@@ -120,7 +121,7 @@ function goTo(page, btn) {
   document.getElementById('page-' + page).classList.add('active');
   if (btn) { btn.classList.add('active'); }
   else {
-    const idx = {dashboard:0,pending:1,analysis:2,history:3}[page];
+    const idx = {dashboard:0,pending:1,futures:2,analysis:3,history:4}[page];
     const bs = document.querySelectorAll('.nav-main button');
     if (bs[idx]) bs[idx].classList.add('active');
   }
@@ -140,11 +141,13 @@ function selectSport(btn) {
 
 function updateModalForSport(sport) {
   const meta = SPORT_META[sport];
-  document.getElementById('lbl-p1').textContent = meta.p1;
+  document.getElementById('lbl-p1').textContent = isFuture ? (meta.futureLabel || meta.p1) : meta.p1;
   document.getElementById('lbl-p2').textContent = meta.p2;
-  // Show/hide player-team row
+  // Show/hide player-team row (nunca aplicável a uma futura — não há confronto)
   const teamRow = document.getElementById('player-team-row');
-  if (meta.playerTeam) {
+  if (isFuture) {
+    teamRow.style.display = 'none';
+  } else if (meta.playerTeam) {
     teamRow.style.display = 'grid';
     document.getElementById('lbl-player').textContent  = sport === 'Football' ? 'Nome do Jogador (opcional)' : 'Jogador a apostar (opcional)';
     document.getElementById('lbl-pteam').textContent   = sport === 'Football' ? 'Equipa do Jogador' : 'Equipa do Jogador';
@@ -153,17 +156,34 @@ function updateModalForSport(sport) {
     document.getElementById('f-player').value = '';
     document.getElementById('f-pteam').value  = '';
   }
+
+  // Modo Futura: esconde o segundo nome + "VS" — só há uma seleção, sem adversário direto
+  const vsRow   = document.getElementById('vs-row');
+  const p2Wrap  = document.getElementById('p2-wrap');
+  const vsBadge = vsRow ? vsRow.querySelector('.vs-badge') : null;
+  if (vsRow)   vsRow.classList.toggle('future-mode', isFuture);
+  if (p2Wrap)  p2Wrap.style.display  = isFuture ? 'none' : '';
+  if (vsBadge) vsBadge.style.display = isFuture ? 'none' : '';
+  if (isFuture) document.getElementById('f-p2').value = '';
+
+  const futureDateRow = document.getElementById('future-date-row');
+  if (futureDateRow) futureDateRow.style.display = isFuture ? 'block' : 'none';
+  if (!isFuture) document.getElementById('f-expected-date').value = '';
 }
 
 // ── COMBINADAS ───────────────────────────────
 function emptyLeg() { return { comp:'', p1:'', p2:'', bet:'', player:'', pteam:'', result:'Pending' }; }
 
 function chooseBetType(type) {
-  betType = type;
+  // "future" não é um bet_type à parte — reaproveita o formulário simples,
+  // só marca isFuture e troca o "vs" por um único nome (ver updateModalForSport)
+  betType  = type === 'future' ? 'simple' : type;
+  isFuture = type === 'future';
   document.getElementById('bet-type-choice').style.display     = 'none';
-  document.getElementById('simple-form-fields').style.display  = type === 'simple' ? 'grid' : 'none';
-  document.getElementById('combo-form-fields').style.display   = type === 'combo'  ? 'grid' : 'none';
-  if (type === 'combo') {
+  document.getElementById('simple-form-fields').style.display  = betType === 'simple' ? 'grid' : 'none';
+  document.getElementById('combo-form-fields').style.display   = betType === 'combo'  ? 'grid' : 'none';
+  updateModalForSport(currentSport);
+  if (betType === 'combo') {
     if (!comboLegs.length) comboLegs.push(emptyLeg());
     renderComboLegs();
   }
@@ -255,6 +275,7 @@ function openModal(docId = null) {
   editId    = docId;
   selResult = 'Pending';
   betType   = null;
+  isFuture  = false;
   comboLegs = [];
   bookmaker = null;
   const today = new Date().toISOString().split('T')[0];
@@ -269,6 +290,7 @@ function openModal(docId = null) {
     document.getElementById('modal-title').textContent = 'Editar Aposta';
     currentSport = b.sport;
     bookmaker    = b.bookmaker || null;
+    isFuture     = !!b.is_future;
     document.getElementById('f-date').value = b.date;
 
     if (b.bet_type === 'combo') {
@@ -282,6 +304,7 @@ function openModal(docId = null) {
       document.getElementById('f-bet').value    = b.bet    || '';
       document.getElementById('f-units').value  = b.units;
       document.getElementById('f-odds').value   = b.odds;
+      document.getElementById('f-expected-date').value = b.expected_result_date || '';
       const playerEl = document.getElementById('f-player');
       const pteamEl = document.getElementById('f-pteam');
       if (playerEl) playerEl.value = b.player || '';
@@ -293,7 +316,7 @@ function openModal(docId = null) {
     currentSport = 'Tennis';
     document.getElementById('f-date').value   = today;
     document.getElementById('f-units').value  = '0.5';
-    ['f-comp','f-p1','f-p2','f-bet','f-odds','f-player','f-pteam','f-combo-units','f-combo-odds'].forEach(id => {
+    ['f-comp','f-p1','f-p2','f-bet','f-odds','f-player','f-pteam','f-combo-units','f-combo-odds','f-expected-date'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -307,7 +330,10 @@ function openModal(docId = null) {
   updateModalForSport(currentSport);
   updateResUI();
   updateBookUI();
-  if (docId) chooseBetType(bets.find(x => x.id === docId).bet_type || 'simple');
+  if (docId) {
+    const b = bets.find(x => x.id === docId);
+    chooseBetType(b.is_future ? 'future' : (b.bet_type || 'simple'));
+  }
   document.getElementById('bet-overlay').classList.add('open');
 }
 
@@ -356,7 +382,7 @@ async function saveBet() {
       p1: null, p2: null, event: null, bet: null,
       units, odds, result: comboResult(legs),
       player: null, pteam: null, bookmaker,
-      bet_type: 'combo', legs
+      bet_type: 'combo', legs, is_future: false
     };
 
     try {
@@ -372,29 +398,32 @@ async function saveBet() {
 
   const comp   = document.getElementById('f-comp').value.trim();
   const p1     = document.getElementById('f-p1').value.trim();
-  const p2     = document.getElementById('f-p2').value.trim();
+  const p2     = isFuture ? '' : document.getElementById('f-p2').value.trim();
   const bet    = document.getElementById('f-bet').value.trim();
   const units  = parseFloat(document.getElementById('f-units').value);
   const odds   = parseFloat(document.getElementById('f-odds').value);
-  const player = document.getElementById('f-player').value.trim();
-  const pteam  = document.getElementById('f-pteam').value.trim();
+  const player = isFuture ? '' : document.getElementById('f-player').value.trim();
+  const pteam  = isFuture ? '' : document.getElementById('f-pteam').value.trim();
 
-  if (!p1 || !p2 || !bet || !units || !odds) {
-    snack('⚠️ Preenche: confronto, aposta, units e odd'); return;
+  if (!p1 || (!isFuture && !p2) || !bet || !units || !odds) {
+    snack(isFuture ? '⚠️ Preenche: nome, aposta, units e odd' : '⚠️ Preenche: confronto, aposta, units e odd'); return;
   }
   if (isNaN(units) || units <= 0)  { snack('⚠️ Units inválidas'); return; }
   if (isNaN(odds)  || odds < 1.01) { snack('⚠️ Odd inválida (mín. 1.01)'); return; }
 
+  const expectedDate = isFuture ? (document.getElementById('f-expected-date').value || null) : null;
+
   const obj = {
     date, sport: currentSport, comp,
-    p1, p2, event: p1 + ' - ' + p2,
+    p1, p2: p2 || null, event: isFuture ? p1 : (p1 + ' - ' + p2),
     bet, units, odds, result: selResult,
-    player, pteam, bookmaker, bet_type: 'simple'
+    player, pteam, bookmaker, bet_type: 'simple', is_future: isFuture,
+    expected_result_date: expectedDate,
   };
 
   try {
     if (editId) { await dbUpdate(editId, obj); snack('✅ Aposta atualizada!'); }
-    else        { await dbAdd(obj);            snack('🎯 Aposta guardada!'); }
+    else        { await dbAdd(obj);            snack(isFuture ? '🔮 Futura guardada!' : '🎯 Aposta guardada!'); }
     closeModal('bet-overlay');
   } catch(e) {
     console.error(e);
@@ -463,6 +492,7 @@ function renderAll() {
   updateUnitLabel();
   renderDashboard();
   renderPending();
+  renderFutures();
   renderAnalysis();
   renderHistory();
 }
@@ -518,7 +548,7 @@ function renderDashboard() {
 
   document.getElementById('dash-pending').innerHTML = pending.slice(0,6).length
     ? pending.slice(0,6).map(pendingCard).join('')
-    : '<div class="empty"><div class="empty-icon">🎯</div>Sem apostas pendentes</div>';
+    : '<div class="empty">Sem apostas pendentes</div>';
 }
 
 function setPendingTab(sport, btn) {
@@ -539,7 +569,7 @@ function renderPending() {
   const filtered = pendingSport === 'all' ? all : all.filter(b => b.sport === pendingSport);
   document.getElementById('pending-list').innerHTML = filtered.length
     ? filtered.map(pendingCard).join('')
-    : '<div class="empty"><div class="empty-icon">🎯</div>Sem apostas pendentes</div>';
+    : '<div class="empty">Sem apostas pendentes</div>';
 }
 
 const LEG_ICON = { Pending:'⏳', Win:'✅', Lost:'❌', Void:'↩️' };
@@ -612,6 +642,62 @@ function pendingCard(b) {
       </div>` : ''}
     </div>
   </div>`;
+}
+
+// ── FUTURAS (outrights) ──────────────────────
+function futureCard(b) {
+  const pot  = (b.units * b.odds).toFixed(2);
+  const potE = (b.units * b.odds * unitVal).toFixed(2);
+  return `<div class="pcard" style="--pc:${SC[b.sport]}">
+    <div class="pcard-tag">FUTURA</div>
+    <div style="margin-bottom:0.35rem"><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]} ${SL[b.sport]}</span></div>
+    <div class="pcard-event">${esc(b.p1) || ''}</div>
+    <div class="pcard-bet">${esc(b.bet)}</div>
+    ${b.expected_result_date ? `<div style="margin-top:0.25rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted2)">📅 Resultado esperado: ${fmtDate(b.expected_result_date)}</div>` : ''}
+    <div class="pcard-footer" style="margin-top:0.7rem">
+      <div><div class="pstat-label">Odd</div><div class="pstat-val">${b.odds.toFixed(2)}</div></div>
+      <div><div class="pstat-label">Units</div><div class="pstat-val">${b.units}u</div></div>
+      <div><div class="pstat-label">Retorno</div><div class="pstat-val">${pot}u</div></div>
+      <div><div class="pstat-label">Em €</div><div class="pstat-val">${potE}€</div></div>
+    </div>
+    <div class="pcard-meta">
+      <span>${esc(b.comp) || '—'} · ${fmtDate(b.date)}${b.bookmaker ? ' · ' + esc(b.bookmaker) : ''}</span>
+      ${window.isAdmin ? `
+      <div class="pcard-actions">
+        <button class="abtn win" onclick="quickResolve('${b.id}','Win')">✅</button>
+        <button class="abtn los" onclick="quickResolve('${b.id}','Lost')">❌</button>
+        <button class="abtn"     onclick="quickResolve('${b.id}','Void')">↩️</button>
+        <button class="abtn"     onclick="openModal('${b.id}')">✏️</button>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderFutures() {
+  const all      = bets.filter(b => b.is_future);
+  const active   = all.filter(b => b.result === 'Pending');
+  const resolved = all.filter(b => b.result !== 'Pending');
+
+  document.getElementById('futures-active-list').innerHTML = active.length
+    ? active.map(futureCard).join('')
+    : '<div class="empty">Sem apostas futuras ativas</div>';
+
+  const tbody = document.getElementById('futures-resolved-list');
+  tbody.innerHTML = resolved.length
+    ? resolved.slice().sort((a, b) => b.date.localeCompare(a.date)).map(b => {
+        const net = calcNet(b);
+        const nc  = net > 0 ? 'text-green' : net < 0 ? 'text-red' : 'text-muted';
+        const rl  = { Win: '✅ Win', Lost: '❌ Lost', Void: '↩️ Void' }[b.result] || b.result;
+        return `<tr>
+          <td class="mono text-muted" style="font-size:0.7rem">${fmtDate(b.date)}</td>
+          <td><span class="spill ${b.sport}"><span class="dot"></span>${SI[b.sport]}</span></td>
+          <td style="font-size:0.78rem">${esc(b.p1) || ''} — ${esc(b.bet)}</td>
+          <td style="font-size:0.72rem;color:var(--muted2);font-family:'DM Mono',monospace">${esc(b.comp) || '—'}</td>
+          <td><span class="rbadge ${b.result}">${rl}</span></td>
+          <td class="mono text-right ${nc}">${net >= 0 ? '+' : ''}${net.toFixed(2)}u</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="6"><div class="empty">Sem futuras resolvidas ainda.</div></td></tr>`;
 }
 
 function setAnalysisTab(sport, btn) {
@@ -1079,6 +1165,9 @@ if (isIosInstallEligible() && !localStorage.getItem('iosInstallHintShown')) {
 if (location.hash === '#pending') {
   const pendingNavBtn = document.querySelectorAll('.nav-main button')[1];
   goTo('pending', pendingNavBtn || null);
+} else if (location.hash === '#futures') {
+  const futuresNavBtn = document.querySelectorAll('.nav-main button')[2];
+  goTo('futures', futuresNavBtn || null);
 }
 
 // ══════════════════════════════════════════

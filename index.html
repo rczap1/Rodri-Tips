@@ -43,6 +43,7 @@
   <div class="nav-main">
     <button class="active" onclick="goTo('dashboard',this)">Dashboard</button>
     <button onclick="goTo('pending',this)">Pendentes</button>
+    <button onclick="goTo('futures',this)">Futuras</button>
     <button onclick="goTo('analysis',this)">Análise</button>
     <button onclick="goTo('history',this)">Histórico</button>
     <button onclick="openSettingsModal()" title="Definições">⚙️</button>
@@ -130,6 +131,31 @@
   </div>
 
   <div class="pending-grid" id="pending-list"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FUTURAS
+══════════════════════════════════════ -->
+<div class="page" id="page-futures">
+  <div class="ph">
+    <div class="ph-title">Futuras</div>
+    <div class="ph-sub">Outrights de longo prazo — vencedores de torneio, título de época, etc.</div>
+  </div>
+
+  <div class="sec-header">
+    <div class="sec-title">Ativas</div>
+  </div>
+  <div class="pending-grid" id="futures-active-list"></div>
+
+  <div class="sec-header" style="margin-top:1.5rem">
+    <div class="sec-title">Resolvidas</div>
+  </div>
+  <div class="table-wrap">
+    <table class="bet-table">
+      <thead><tr><th>Data</th><th>Modal.</th><th>Aposta</th><th>Competição</th><th>Resultado</th><th class="text-right">Lucro (u)</th></tr></thead>
+      <tbody id="futures-resolved-list"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -246,6 +272,7 @@
       <div class="resolve-row">
         <button type="button" class="res-opt" onclick="chooseBetType('simple')">🎯 Aposta Simples</button>
         <button type="button" class="res-opt" onclick="chooseBetType('combo')">🧩 Aposta Combinada</button>
+        <button type="button" class="res-opt" onclick="chooseBetType('future')">🔮 Aposta Futura</button>
       </div>
     </div>
 
@@ -255,18 +282,22 @@
         <input type="text" id="f-comp">
       </div>
 
-      <div class="vs-row">
+      <div class="vs-row" id="vs-row">
         <div class="fg">
           <label id="lbl-p1">Jogador 1</label>
           <input type="text" id="f-p1">
-          <div class="hint" id="hint-p1"></div>
         </div>
         <div class="vs-badge">VS</div>
-        <div class="fg">
+        <div class="fg" id="p2-wrap">
           <label id="lbl-p2">Jogador 2</label>
           <input type="text" id="f-p2">
-          <div class="hint" id="hint-p2"></div>
         </div>
+      </div>
+
+      <div class="fg full" id="future-date-row" style="display:none">
+        <label>Data prevista do resultado (opcional)</label>
+        <input type="date" id="f-expected-date">
+        <div class="hint">Quando esperas saber o resultado — ex: fim do torneio, fim da época</div>
       </div>
 
       <div class="fg full">

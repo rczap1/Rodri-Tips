@@ -68,6 +68,17 @@ begin
   end;
   potential := round(NEW.units * NEW.odds, 2);
 
+  -- Futuras (outrights) não revelam detalhe nenhum — mantém a curiosidade
+  -- para irem ao site, tal como as combinadas fizeram no início
+  if NEW.is_future then
+    msg := E'🔮 Nova aposta futura!\nConsulta o site para veres os detalhes 👉 https://rczap1.github.io/Rodri-Tips/#futures';
+    if NEW.expected_result_date is not null then
+      msg := msg || format(E'\n📅 Resultado esperado: %s', to_char(NEW.expected_result_date, 'DD/MM/YYYY'));
+    end if;
+    perform public.telegram_send(msg);
+    return NEW;
+  end if;
+
   if NEW.bet_type = 'combo' then
     for leg in select * from jsonb_array_elements(coalesce(NEW.legs, '[]'::jsonb))
     loop
@@ -166,12 +177,23 @@ begin
       result_icon, result_label, sport_icon, sport_label, legs_text, NEW.odds, NEW.units
     );
   else
-    msg := format(
-      E'%s %s — %s %s\n%s vs %s\n%s @%s · %su',
-      result_icon, result_label, sport_icon, sport_label,
-      coalesce(NEW.p1, '—'), coalesce(NEW.p2, '—'),
-      coalesce(NEW.bet, '—'), NEW.odds, NEW.units
-    );
+    if NEW.is_future then
+      -- Futura: só um nome, sem "vs" — e assinala que era uma futura, já
+      -- que a mensagem de "nova aposta" não revelou o quê
+      msg := format(
+        E'%s %s — Futura %s %s\n%s\n%s @%s · %su',
+        result_icon, result_label, sport_icon, sport_label,
+        coalesce(NEW.p1, '—'),
+        coalesce(NEW.bet, '—'), NEW.odds, NEW.units
+      );
+    else
+      msg := format(
+        E'%s %s — %s %s\n%s vs %s\n%s @%s · %su',
+        result_icon, result_label, sport_icon, sport_label,
+        coalesce(NEW.p1, '—'), coalesce(NEW.p2, '—'),
+        coalesce(NEW.bet, '—'), NEW.odds, NEW.units
+      );
+    end if;
 
     if coalesce(NEW.comp, '') <> '' then
       msg := msg || format(E'\n🏆 %s', NEW.comp);
