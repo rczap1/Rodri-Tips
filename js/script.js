@@ -509,6 +509,7 @@ function renderDashboard() {
   const allS    = getStats(bets.filter(b => b.result !== 'Pending'));
   // Futuras têm separador próprio — não contam para a lista/contagem de Pendentes
   const pending = bets.filter(b => b.result === 'Pending' && !b.is_future);
+  const pendingFutures = bets.filter(b => b.result === 'Pending' && b.is_future);
 
   const pe = document.getElementById('s-profit');
   pe.textContent = (s.profit >= 0 ? '+' : '') + s.profit.toFixed(2) + 'u';
@@ -518,7 +519,7 @@ function renderDashboard() {
   document.getElementById('s-wr').textContent     = s.wr.toFixed(0) + '%';
   document.getElementById('s-record').textContent = s.wins + 'W / ' + s.losses + 'L / ' + allS.voids + 'V';
   document.getElementById('s-total').textContent  = bets.length;
-  document.getElementById('s-pcount').textContent = pending.length + ' pendentes';
+  document.getElementById('s-pcount').textContent = pending.length + ' pendentes' + (pendingFutures.length ? ' · ' + pendingFutures.length + ' futuras' : '');
   document.getElementById('s-units').textContent  = allS.unitsOut.toFixed(1) + 'u';
   document.getElementById('s-avg-odd').textContent= 'Odd média: ' + (allS.avgOdd > 0 ? allS.avgOdd.toFixed(2) : '—');
 
