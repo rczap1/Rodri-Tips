@@ -982,7 +982,7 @@ function renderHistory() {
     const confronto = isCombo
       ? `🧩 Combinada (${(b.legs||[]).length}x)`
       : b.is_future
-        ? `🔮 Futura`
+        ? `Futura`
         : (b.p1 && b.p2
             ? `<span style="font-weight:600">${esc(b.p1)}</span> <span style="color:var(--muted);font-size:0.65rem">vs</span> <span style="font-weight:600">${esc(b.p2)}</span>`
             : esc(b.event) || '—');

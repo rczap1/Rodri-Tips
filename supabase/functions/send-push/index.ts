@@ -47,14 +47,17 @@ function buildMessage(payload: any) {
   const isCombo = record.bet_type === 'combo';
 
   if (payload.type === 'INSERT') {
-    // Futuras não revelam nada — mantém a curiosidade, tal como no Telegram
-    if (record.is_future) {
-      let body = 'Consulta o site para veres os detalhes.';
-      if (record.expected_result_date) body += `\n📅 Resultado esperado: ${record.expected_result_date}`;
-      return { title: '🔮 Nova aposta futura!', body, url: './#futures' };
-    }
-
     const potential = round2(record.units * record.odds);
+
+    // Futuras: mesmo detalhe das outras (a mensagem vaga fica só no Telegram)
+    if (record.is_future) {
+      let body = `${record.bet} @${record.odds} · ${record.units}u`;
+      if (record.comp) body += `\n🏆 ${record.comp}`;
+      if (record.bookmaker) body += `\n🏠 ${record.bookmaker}`;
+      if (record.expected_result_date) body += `\n📅 Resultado esperado: ${record.expected_result_date}`;
+      body += `\n📈 Retorno potencial: ${potential}u`;
+      return { title: `🔮 Nova aposta futura — ${icon} ${sportLabel}`, body, url: './#futures' };
+    }
 
     if (isCombo) {
       const legsText = (record.legs ?? []).map((l: any) => legLine(l, false)).join('\n');
