@@ -58,7 +58,7 @@ begin
       case sport_row.sport
         when 'Tennis' then 'Ténis' when 'Handball' then 'Andebol'
         when 'MMA' then 'MMA' when 'Football' then 'Futebol'
-        when 'Basketball' then 'Basquetebol' when 'AmericanFootball' then 'Futebol Americano' else sport_row.sport
+        when 'Basketball' then 'Basquetebol' when 'AmericanFootball' then 'NFL' else sport_row.sport
       end,
       case when sport_row.profit >= 0 then '+' else '' end, round(sport_row.profit, 2),
       case when sport_row.units_out > 0 then round(sport_row.profit / sport_row.units_out * 100, 1) else 0 end,

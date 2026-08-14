@@ -67,7 +67,7 @@ begin
     when 'MMA'              then 'MMA'
     when 'Football'         then 'Futebol'
     when 'Basketball'       then 'Basquetebol'
-    when 'AmericanFootball' then 'Futebol Americano'
+    when 'AmericanFootball' then 'NFL'
     else NEW.sport
   end;
   potential := round(NEW.units * NEW.odds, 2);
@@ -161,7 +161,7 @@ begin
     when 'MMA'              then 'MMA'
     when 'Football'         then 'Futebol'
     when 'Basketball'       then 'Basquetebol'
-    when 'AmericanFootball' then 'Futebol Americano'
+    when 'AmericanFootball' then 'NFL'
     else NEW.sport
   end;
 

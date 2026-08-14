@@ -4,7 +4,7 @@
 
 const SC = { Tennis:'var(--tennis)', Handball:'var(--handball)', MMA:'var(--mma)', Football:'var(--football)', Basketball:'var(--basketball)', AmericanFootball:'var(--american-football)' };
 const SI = { Tennis:'🎾', Handball:'🤾', MMA:'🥊', Football:'⚽', Basketball:'🏀', AmericanFootball:'🏈' };
-const SL = { Tennis:'Ténis', Handball:'Andebol', MMA:'MMA', Football:'Futebol', Basketball:'Basquetebol', AmericanFootball:'Futebol Americano' };
+const SL = { Tennis:'Ténis', Handball:'Andebol', MMA:'MMA', Football:'Futebol', Basketball:'Basquetebol', AmericanFootball:'NFL' };
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const SPORT_META = {
