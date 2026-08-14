@@ -53,17 +53,21 @@ declare
   potential    numeric;
 begin
   sport_icon := case NEW.sport
-    when 'Tennis'   then '🎾'
-    when 'Handball' then '🤾'
-    when 'MMA'      then '🥊'
-    when 'Football' then '⚽'
+    when 'Tennis'           then '🎾'
+    when 'Handball'         then '🤾'
+    when 'MMA'              then '🥊'
+    when 'Football'         then '⚽'
+    when 'Basketball'       then '🏀'
+    when 'AmericanFootball' then '🏈'
     else '🏆'
   end;
   sport_label := case NEW.sport
-    when 'Tennis'   then 'Ténis'
-    when 'Handball' then 'Andebol'
-    when 'MMA'      then 'MMA'
-    when 'Football' then 'Futebol'
+    when 'Tennis'           then 'Ténis'
+    when 'Handball'         then 'Andebol'
+    when 'MMA'              then 'MMA'
+    when 'Football'         then 'Futebol'
+    when 'Basketball'       then 'Basquetebol'
+    when 'AmericanFootball' then 'Futebol Americano'
     else NEW.sport
   end;
   potential := round(NEW.units * NEW.odds, 2);
@@ -143,17 +147,21 @@ declare
   profit       numeric;
 begin
   sport_icon := case NEW.sport
-    when 'Tennis'   then '🎾'
-    when 'Handball' then '🤾'
-    when 'MMA'      then '🥊'
-    when 'Football' then '⚽'
+    when 'Tennis'           then '🎾'
+    when 'Handball'         then '🤾'
+    when 'MMA'              then '🥊'
+    when 'Football'         then '⚽'
+    when 'Basketball'       then '🏀'
+    when 'AmericanFootball' then '🏈'
     else '🏆'
   end;
   sport_label := case NEW.sport
-    when 'Tennis'   then 'Ténis'
-    when 'Handball' then 'Andebol'
-    when 'MMA'      then 'MMA'
-    when 'Football' then 'Futebol'
+    when 'Tennis'           then 'Ténis'
+    when 'Handball'         then 'Andebol'
+    when 'MMA'              then 'MMA'
+    when 'Football'         then 'Futebol'
+    when 'Basketball'       then 'Basquetebol'
+    when 'AmericanFootball' then 'Futebol Americano'
     else NEW.sport
   end;
 

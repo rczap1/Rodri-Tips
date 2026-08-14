@@ -52,11 +52,13 @@ begin
       E'\n%s %s: %s%su · ROI %s%% · %sW/%sL',
       case sport_row.sport
         when 'Tennis' then '🎾' when 'Handball' then '🤾'
-        when 'MMA' then '🥊' when 'Football' then '⚽' else '🏆'
+        when 'MMA' then '🥊' when 'Football' then '⚽'
+        when 'Basketball' then '🏀' when 'AmericanFootball' then '🏈' else '🏆'
       end,
       case sport_row.sport
         when 'Tennis' then 'Ténis' when 'Handball' then 'Andebol'
-        when 'MMA' then 'MMA' when 'Football' then 'Futebol' else sport_row.sport
+        when 'MMA' then 'MMA' when 'Football' then 'Futebol'
+        when 'Basketball' then 'Basquetebol' when 'AmericanFootball' then 'Futebol Americano' else sport_row.sport
       end,
       case when sport_row.profit >= 0 then '+' else '' end, round(sport_row.profit, 2),
       case when sport_row.units_out > 0 then round(sport_row.profit / sport_row.units_out * 100, 1) else 0 end,

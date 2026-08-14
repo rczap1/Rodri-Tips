@@ -2,9 +2,9 @@
    RODRI TIPS — script.js
    ═══════════════════════════════════════════ */
 
-const SC = { Tennis:'var(--tennis)', Handball:'var(--handball)', MMA:'var(--mma)', Football:'var(--football)' };
-const SI = { Tennis:'🎾', Handball:'🤾', MMA:'🥊', Football:'⚽' };
-const SL = { Tennis:'Ténis', Handball:'Andebol', MMA:'MMA', Football:'Futebol' };
+const SC = { Tennis:'var(--tennis)', Handball:'var(--handball)', MMA:'var(--mma)', Football:'var(--football)', Basketball:'var(--basketball)', AmericanFootball:'var(--american-football)' };
+const SI = { Tennis:'🎾', Handball:'🤾', MMA:'🥊', Football:'⚽', Basketball:'🏀', AmericanFootball:'🏈' };
+const SL = { Tennis:'Ténis', Handball:'Andebol', MMA:'MMA', Football:'Futebol', Basketball:'Basquetebol', AmericanFootball:'Futebol Americano' };
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const SPORT_META = {
@@ -12,6 +12,8 @@ const SPORT_META = {
   Handball:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
   MMA:     { type:'individual', p1:'Lutador 1',    p2:'Lutador 2',   h1:'Favorito',       h2:'Underdog'        },
   Football:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
+  Basketball:      { type:'team', p1:'Equipa Casa', p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
+  AmericanFootball:{ type:'team', p1:'Equipa Casa', p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
 };
 
 // ── STATE ────────────────────────────────────

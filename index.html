@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rodri Tips</title>
-<meta name="description" content="Bet tracker pessoal — Ténis, Andebol, MMA e Futebol. Histórico completo, estatísticas e apostas em tempo real.">
+<meta name="description" content="Bet tracker pessoal — Ténis, Andebol, MMA, Futebol, Basquetebol e Futebol Americano. Histórico completo, estatísticas e apostas em tempo real.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Rodri Tips — Bet Tracker">
-<meta property="og:description" content="Apostas em tempo real — Ténis, Andebol, MMA e Futebol. Histórico completo e estatísticas.">
+<meta property="og:description" content="Apostas em tempo real — Ténis, Andebol, MMA, Futebol, Basquetebol e Futebol Americano. Histórico completo e estatísticas.">
 <meta property="og:url" content="https://rczap1.github.io/Rodri-Tips/">
 <meta property="og:image" content="https://rczap1.github.io/Rodri-Tips/pwa-icon-512.png">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Rodri Tips — Bet Tracker">
-<meta name="twitter:description" content="Apostas em tempo real — Ténis, Andebol, MMA e Futebol.">
+<meta name="twitter:description" content="Apostas em tempo real — Ténis, Andebol, MMA, Futebol, Basquetebol e Futebol Americano.">
 <meta name="twitter:image" content="https://rczap1.github.io/Rodri-Tips/pwa-icon-512.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -128,6 +128,8 @@
     <button class="sport-tab" style="--tab-color:var(--handball)" onclick="setPendingTab('Handball',this)">🤾 Andebol <span class="tab-count" id="pt-Handball">0</span></button>
     <button class="sport-tab" style="--tab-color:var(--mma)"      onclick="setPendingTab('MMA',this)">🥊 MMA <span class="tab-count" id="pt-MMA">0</span></button>
     <button class="sport-tab" style="--tab-color:var(--football)" onclick="setPendingTab('Football',this)">⚽ Futebol <span class="tab-count" id="pt-Football">0</span></button>
+    <button class="sport-tab" style="--tab-color:var(--basketball)" onclick="setPendingTab('Basketball',this)">🏀 Basquetebol <span class="tab-count" id="pt-Basketball">0</span></button>
+    <button class="sport-tab" style="--tab-color:var(--american-football)" onclick="setPendingTab('AmericanFootball',this)">🏈 Fut. Americano <span class="tab-count" id="pt-AmericanFootball">0</span></button>
   </div>
 
   <div class="pending-grid" id="pending-list"></div>
@@ -172,6 +174,8 @@
     <button class="sport-tab"        style="--tab-color:var(--handball)" onclick="setAnalysisTab('Handball',this)">🤾 Andebol</button>
     <button class="sport-tab"        style="--tab-color:var(--mma)"      onclick="setAnalysisTab('MMA',this)">🥊 MMA</button>
     <button class="sport-tab"        style="--tab-color:var(--football)" onclick="setAnalysisTab('Football',this)">⚽ Futebol</button>
+    <button class="sport-tab"        style="--tab-color:var(--basketball)" onclick="setAnalysisTab('Basketball',this)">🏀 Basquetebol</button>
+    <button class="sport-tab"        style="--tab-color:var(--american-football)" onclick="setAnalysisTab('AmericanFootball',this)">🏈 Fut. Americano</button>
   </div>
 
   <div class="sub-tabs" id="analysis-subtabs">
@@ -199,6 +203,8 @@
     <button class="sport-tab"        style="--tab-color:var(--handball)" onclick="setHistoryTab('Handball',this)">🤾 Andebol</button>
     <button class="sport-tab"        style="--tab-color:var(--mma)"      onclick="setHistoryTab('MMA',this)">🥊 MMA</button>
     <button class="sport-tab"        style="--tab-color:var(--football)" onclick="setHistoryTab('Football',this)">⚽ Futebol</button>
+    <button class="sport-tab"        style="--tab-color:var(--basketball)" onclick="setHistoryTab('Basketball',this)">🏀 Basquetebol</button>
+    <button class="sport-tab"        style="--tab-color:var(--american-football)" onclick="setHistoryTab('AmericanFootball',this)">🏈 Fut. Americano</button>
   </div>
 
   <div class="filters">
@@ -252,6 +258,8 @@
           <button class="sport-sel-btn"             data-sport="Handball" onclick="selectSport(this)">🤾 Andebol</button>
           <button class="sport-sel-btn"             data-sport="MMA"      onclick="selectSport(this)">🥊 MMA</button>
           <button class="sport-sel-btn"             data-sport="Football" onclick="selectSport(this)">⚽ Futebol</button>
+          <button class="sport-sel-btn"             data-sport="Basketball" onclick="selectSport(this)">🏀 Basquetebol</button>
+          <button class="sport-sel-btn"             data-sport="AmericanFootball" onclick="selectSport(this)">🏈 Fut. Americano</button>
         </div>
       </div>
     </div>

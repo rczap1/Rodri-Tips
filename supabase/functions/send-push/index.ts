@@ -22,8 +22,8 @@ const WEBHOOK_SECRET = Deno.env.get("WEBHOOK_SECRET");
 const VAPID_PUBLIC_KEY  = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 
-const SPORT_ICON: Record<string, string> = { Tennis: '🎾', Handball: '🤾', MMA: '🥊', Football: '⚽' };
-const SPORT_LABEL: Record<string, string> = { Tennis: 'Ténis', Handball: 'Andebol', MMA: 'MMA', Football: 'Futebol' };
+const SPORT_ICON: Record<string, string> = { Tennis: '🎾', Handball: '🤾', MMA: '🥊', Football: '⚽', Basketball: '🏀', AmericanFootball: '🏈' };
+const SPORT_LABEL: Record<string, string> = { Tennis: 'Ténis', Handball: 'Andebol', MMA: 'MMA', Football: 'Futebol', Basketball: 'Basquetebol', AmericanFootball: 'Futebol Americano' };
 const RESULT_ICON: Record<string, string> = { Win: '✅', Lost: '❌', Void: '↩️' };
 const RESULT_LABEL: Record<string, string> = { Win: 'Aposta Ganha', Lost: 'Aposta Perdida', Void: 'Aposta Anulada' };
 const LEG_ICON: Record<string, string> = { Win: '✅', Lost: '❌', Void: '↩️', Pending: '⏳' };

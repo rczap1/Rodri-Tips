@@ -6,7 +6,7 @@
 create table if not exists public.bets (
   id         uuid primary key default gen_random_uuid(),
   date       date not null,
-  sport      text not null check (sport in ('Tennis','Handball','MMA','Football')),
+  sport      text not null check (sport in ('Tennis','Handball','MMA','Football','Basketball','AmericanFootball')),
   comp       text,
   p1         text,
   p2         text,

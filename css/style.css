@@ -15,6 +15,8 @@
   --handball: #33bbee;
   --mma: #ee3344;
   --football: #f97316;
+  --basketball: #eab308;
+  --american-football: #c2884a;
   --win: #4ade80;
   --loss: #f87171;
   --pending: #fbbf24;
@@ -354,14 +356,18 @@ main {
 }
 
 /* ── SPORT BREAKDOWN ── */
+/* flex em vez de grid: com grid, uma última linha incompleta (ex: 2 cartões
+   numa grelha de 4 colunas) deixa colunas vazias à direita — em flex, os
+   cartões da última linha esticam e preenchem a largura toda. */
 .sport-breakdown {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.9rem;
   margin-bottom: 1.5rem;
 }
 
 .sport-card {
+  flex: 1 1 180px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-top: 3px solid var(--sc, #fff);
@@ -503,6 +509,8 @@ main {
 .spill.Handball{ background: #33bbee18; color: var(--handball); }
 .spill.MMA     { background: #ee334418; color: var(--mma); }
 .spill.Football{ background: #f9731618; color: var(--football); }
+.spill.Basketball       { background: #eab30818; color: var(--basketball); }
+.spill.AmericanFootball { background: #c2884a18; color: var(--american-football); }
 .spill .dot    { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
 /* ── RESULT BADGES ── */
@@ -736,6 +744,8 @@ select option { background: var(--surface2); }
 .sport-sel-btn.sel-Handball { border-color: var(--handball); color: var(--handball); background: #33bbee12; }
 .sport-sel-btn.sel-MMA      { border-color: var(--mma);      color: var(--mma);      background: #ee334412; }
 .sport-sel-btn.sel-Football { border-color: var(--football); color: var(--football); background: #f9731612; }
+.sport-sel-btn.sel-Basketball       { border-color: var(--basketball); color: var(--basketball); background: #eab30812; }
+.sport-sel-btn.sel-AmericanFootball { border-color: var(--american-football); color: var(--american-football); background: #c2884a12; }
 
 /* RESULT SELECTOR */
 .resolve-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -864,7 +874,6 @@ select option { background: var(--surface2); }
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .stats-grid        { grid-template-columns: repeat(2, 1fr); }
-  .sport-breakdown   { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 640px) {
