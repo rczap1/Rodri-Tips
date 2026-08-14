@@ -27,7 +27,7 @@ let analysisSport = 'Tennis', analysisMode = 'entity';
 let betType   = null; // 'simple' | 'combo'
 let isFuture  = false; // aposta futura (outright) — só válido com betType 'simple'
 let comboLegs = [];
-let bookmaker = null; // 22bet | Betano | Betclic | Bwin | Solverde
+let bookmaker = null; // 22bet | Betano | Betclic | Bwin | Solverde | Leon
 // isAdmin e ADMIN_EMAIL são definidos em index.html (junto da inicialização do Supabase)
 
 // ── SUPABASE DATA LAYER ──────────────────────
