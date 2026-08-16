@@ -8,12 +8,12 @@ const SL = { Tennis:'Ténis', Handball:'Andebol', MMA:'MMA', Football:'Futebol',
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const SPORT_META = {
-  Tennis:  { type:'individual', p1:'Jogador 1',   p2:'Jogador 2',   h1:'Favorito',       h2:'Underdog'        },
-  Handball:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
-  MMA:     { type:'individual', p1:'Lutador 1',    p2:'Lutador 2',   h1:'Favorito',       h2:'Underdog'        },
-  Football:{ type:'team',       p1:'Equipa Casa',  p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
-  Basketball:      { type:'team', p1:'Equipa Casa', p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
-  AmericanFootball:{ type:'team', p1:'Equipa Casa', p2:'Equipa Fora', h1:'Equipa da casa', h2:'Equipa visitante', playerTeam: true },
+  Tennis:  { p1:'Jogador 1',  p2:'Jogador 2'  },
+  Handball:{ p1:'Equipa Casa', p2:'Equipa Fora', playerTeam: true },
+  MMA:     { p1:'Lutador 1',  p2:'Lutador 2'  },
+  Football:{ p1:'Equipa Casa', p2:'Equipa Fora', playerTeam: true },
+  Basketball:      { p1:'Equipa Casa', p2:'Equipa Fora', playerTeam: true },
+  AmericanFootball:{ p1:'Equipa Casa', p2:'Equipa Fora', playerTeam: true },
 };
 
 // ── STATE ────────────────────────────────────
@@ -152,7 +152,7 @@ function updateModalForSport(sport) {
   } else if (meta.playerTeam) {
     teamRow.style.display = 'grid';
     document.getElementById('lbl-player').textContent  = sport === 'Football' ? 'Nome do Jogador (opcional)' : 'Jogador a apostar (opcional)';
-    document.getElementById('lbl-pteam').textContent   = sport === 'Football' ? 'Equipa do Jogador' : 'Equipa do Jogador';
+    document.getElementById('lbl-pteam').textContent   = 'Equipa do Jogador';
   } else {
     teamRow.style.display = 'none';
     document.getElementById('f-player').value = '';

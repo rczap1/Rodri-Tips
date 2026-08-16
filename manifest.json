@@ -1,7 +1,7 @@
 {
   "name": "Rodri Tips — Bet Tracker",
   "short_name": "Rodri Tips",
-  "description": "Bet tracker pessoal — Ténis, Andebol, MMA e Futebol",
+  "description": "Bet tracker pessoal — Ténis, Andebol, MMA, Futebol, Basquetebol e NFL",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

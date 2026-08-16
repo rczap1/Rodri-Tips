@@ -43,8 +43,11 @@ Não precisa de nenhum setup extra — funciona assim que o `index.html`, o
 ## 🔔 Notificações — Telegram (canal principal, recomendado)
 
 Avisa automaticamente um canal/grupo de Telegram sempre que colocas uma
-aposta nova (Pending) ou resolves uma pendente (Win/Lost/Void). Não precisa
-de Edge Function nem deploy — é só SQL correndo no Supabase.
+aposta nova (Pending) ou resolves uma pendente (Win/Lost/Void). O envio
+passa por uma Edge Function `send-telegram` (chamadas diretas do Postgres
+para api.telegram.org mostraram-se pouco fiáveis em produção — timeouts no
+handshake TLS; ligar através de uma Edge Function no domínio supabase.co
+resolveu isso, é o mesmo caminho que o push já usava sem falhas).
 
 1. Fala com **@BotFather** no Telegram → `/newbot` → dá-te o **BOT_TOKEN**.
 2. Cria um canal ou grupo, adiciona o bot como admin.
@@ -52,11 +55,24 @@ de Edge Function nem deploy — é só SQL correndo no Supabase.
    `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates` no browser e procura
    `"chat":{"id": ...}` — esse número é o **CHAT_ID** (alternativa: usar
    `@myidbot`/`@userinfobot`).
-4. Abre [`supabase/migration_telegram_notifications.sql`](supabase/migration_telegram_notifications.sql),
-   substitui `<BOT_TOKEN>` e `<CHAT_ID>` (só na cópia que colas no SQL
-   Editor — **não faças commit** dos valores reais) e corre o ficheiro.
+4. Faz login/link e deploy da function:
+   ```bash
+   npx supabase@latest login
+   npx supabase@latest link --project-ref <o-teu-project-ref>
+   npx supabase@latest functions deploy send-telegram --no-verify-jwt
+   npx supabase@latest secrets set TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=... WEBHOOK_SECRET=...
+   ```
+   (podes reutilizar o mesmo `WEBHOOK_SECRET` que já usas no push, se já o
+   tiveres configurado.)
+5. Abre [`supabase/migration_telegram_notifications.sql`](supabase/migration_telegram_notifications.sql),
+   substitui `<PROJECT-REF>` e `<WEBHOOK_SECRET>` (só na cópia que colas no
+   SQL Editor — **não faças commit** dos valores reais) e corre o ficheiro.
 
-Pronto — a partir daí, cada aposta nova/resolvida cai automaticamente no canal.
+Pronto — a partir daí, cada aposta nova/resolvida cai automaticamente no
+canal. Repara que o BOT_TOKEN/CHAT_ID já não aparecem em lado nenhum do SQL
+— ficam só nos secrets da function — por isso podes voltar a correr este
+ficheiro sempre que precisares (ex: mudar o texto de uma mensagem) sem
+partir o envio.
 
 ## 🔔 Notificações — Push no browser (extra opcional)
 
@@ -104,6 +120,9 @@ Rodri-Tips/
     ├── migration_telegram_notifications.sql  # Migração: avisos via Telegram
     ├── migration_telegram_monthly_recap.sql   # Migração: balanço mensal no Telegram
     ├── migration_push_notifications.sql      # Migração: notificações push (opcional)
+    ├── migration_futures.sql             # Migração: apostas futuras (outrights)
+    ├── migration_basketball_football_americano.sql  # Migração: Basquetebol + NFL
+    ├── functions/send-telegram/index.ts  # Edge Function que envia as mensagens ao Telegram
     ├── functions/send-push/index.ts      # Edge Function que envia o push (opcional)
     ├── functions/subscribe-push/index.ts # Edge Function que regista subscrições push
     └── migrations_antigas/               # Só para quem já tinha o projeto antes
@@ -119,6 +138,8 @@ Paleta de cores (definida em `css/style.css` como variáveis CSS):
 - `--handball`: #33bbee (Andebol)
 - `--mma`: #ee3344     (MMA)
 - `--football`: #f97316 (Futebol)
+- `--basketball`: #eab308 (Basquetebol)
+- `--american-football`: #c2884a (NFL)
 - `--win`: #4ade80     (Ganho)
 - `--loss`: #f87171    (Perda)
 - `--pending`: #fbbf24 (Pendente)

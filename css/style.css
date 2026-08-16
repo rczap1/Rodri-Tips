@@ -862,7 +862,6 @@ select option { background: var(--surface2); }
 
 /* ── EMPTY ── */
 .empty { text-align: center; padding: 3rem; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.78rem; line-height: 1.8; }
-.empty-icon { font-size: 2rem; margin-bottom: 0.7rem; }
 
 /* ── UTILS ── */
 .mono { font-family: 'DM Mono', monospace; }

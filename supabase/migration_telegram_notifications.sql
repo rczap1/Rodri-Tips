@@ -1,43 +1,36 @@
 -- Rodri Tips — migração: notificações via Telegram
--- Corre isto no SQL Editor do teu projeto Supabase já existente
+-- Corre isto no SQL Editor do teu projeto Supabase já existente, DEPOIS de
+-- fazeres o deploy da Edge Function `send-telegram` (ver README.md).
 --
 -- Avisa automaticamente um canal/grupo de Telegram sempre que:
 --   1) uma aposta nova é criada com resultado "Pending" (para copiarem a tempo)
 --   2) uma aposta pendente é resolvida (Win/Lost/Void)
 --
--- Não precisa de Edge Function nem de deploy — é só uma chamada HTTP direta
--- do Postgres para a API do Telegram, usando a extensão pg_net.
+-- O envio passa pela Edge Function `send-telegram` (não é chamada direta do
+-- Postgres para api.telegram.org) — chamadas diretas do pg_net para fora do
+-- domínio supabase.co mostraram-se pouco fiáveis em produção (timeouts no
+-- handshake TLS mesmo com margem generosa). O BOT_TOKEN e o CHAT_ID ficam
+-- como secrets da Edge Function, não aqui — por isso este ficheiro já não
+-- tem nenhum valor sensível e podes correr-lo quantas vezes precisares sem
+-- partir nada.
 --
--- ⚠️  ATENÇÃO: substitui <BOT_TOKEN> e <CHAT_ID> abaixo pelos valores reais
--- SÓ na cópia que colas no SQL Editor. NÃO faças commit deste ficheiro com
--- os valores reais preenchidos — o token do bot é um segredo (quem o tiver
--- consegue enviar mensagens como o teu bot).
---
--- Como obter os valores:
---   1. Fala com @BotFather no Telegram → /newbot → dá-te o BOT_TOKEN.
---   2. Cria um canal/grupo, adiciona o bot como admin.
---   3. Envia uma mensagem qualquer no canal, depois visita
---      https://api.telegram.org/bot<BOT_TOKEN>/getUpdates
---      e procura o campo "chat":{"id": ...} — esse número é o CHAT_ID
---      (ou usa @myidbot / @userinfobot para grupos).
+-- ⚠️  ATENÇÃO: substitui <PROJECT-REF> e <WEBHOOK_SECRET> abaixo pelos
+-- valores reais SÓ na cópia que colas no SQL Editor. NÃO faças commit deste
+-- ficheiro com os valores reais preenchidos.
 
 create extension if not exists pg_net;
 
--- Função central de envio — só aqui é que o token/chat aparecem
+-- Função central de envio
 create or replace function public.telegram_send(msg text)
 returns void
 language plpgsql
 security definer
 as $$
 begin
-  -- timeout mais alto que o default (5s) do pg_net — o handshake TLS com a
-  -- API do Telegram por vezes demora mais do que isso, e sem margem a
-  -- chamada falha por timeout mesmo estando tudo bem configurado
   perform net.http_post(
-    url                := 'https://api.telegram.org/bot<BOT_TOKEN>/sendMessage',
-    body               := jsonb_build_object('chat_id', '<CHAT_ID>', 'text', msg),
-    headers            := '{"Content-Type": "application/json"}'::jsonb,
-    timeout_milliseconds := 15000
+    url     := 'https://<PROJECT-REF>.supabase.co/functions/v1/send-telegram',
+    body    := jsonb_build_object('text', msg),
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-webhook-secret', '<WEBHOOK_SECRET>')
   );
 end;
 $$;
