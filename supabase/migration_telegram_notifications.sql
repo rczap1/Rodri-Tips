@@ -30,10 +30,14 @@ language plpgsql
 security definer
 as $$
 begin
+  -- timeout mais alto que o default (5s) do pg_net — o handshake TLS com a
+  -- API do Telegram por vezes demora mais do que isso, e sem margem a
+  -- chamada falha por timeout mesmo estando tudo bem configurado
   perform net.http_post(
-    url     := 'https://api.telegram.org/bot<BOT_TOKEN>/sendMessage',
-    body    := jsonb_build_object('chat_id', '<CHAT_ID>', 'text', msg),
-    headers := '{"Content-Type": "application/json"}'::jsonb
+    url                := 'https://api.telegram.org/bot<BOT_TOKEN>/sendMessage',
+    body               := jsonb_build_object('chat_id', '<CHAT_ID>', 'text', msg),
+    headers            := '{"Content-Type": "application/json"}'::jsonb,
+    timeout_milliseconds := 15000
   );
 end;
 $$;
