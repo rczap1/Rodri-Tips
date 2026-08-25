@@ -41,7 +41,11 @@ async function loadBets() {
     .from('bets')
     .select('*')
     .order('date', { ascending: false });
-  if (error) { console.error('Erro ao carregar apostas:', error); return []; }
+  if (error) {
+    console.error('Erro ao carregar apostas:', error);
+    snack('⚠️ Não foi possível carregar as apostas — verifica a ligação');
+    return [];
+  }
   return data;
 }
 
@@ -73,7 +77,11 @@ async function dbDelete(id) {
 // ── SETTINGS (valor da unidade — partilhado, tal como as apostas) ──
 async function loadSettings() {
   const { data, error } = await window.supabase.from('settings').select('*').limit(1).single();
-  if (error) { console.error('Erro ao carregar definições:', error); return; }
+  if (error) {
+    console.error('Erro ao carregar definições:', error);
+    snack('⚠️ Não foi possível carregar as definições — verifica a ligação');
+    return;
+  }
   settingsId = data.id;
   unitVal    = parseFloat(data.unit_value);
   updateUnitLabel();
@@ -81,6 +89,9 @@ async function loadSettings() {
 }
 
 loadSettings();
+
+const footerYearEl = document.getElementById('footer-year');
+if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
 
 // ── UNIT ─────────────────────────────────────
 function openUnitModal() {
@@ -123,7 +134,7 @@ function goTo(page, btn) {
   document.getElementById('page-' + page).classList.add('active');
   if (btn) { btn.classList.add('active'); }
   else {
-    const idx = {dashboard:0,pending:1,futures:2,analysis:3,history:4}[page];
+    const idx = {home:0,dashboard:1,pending:2,futures:3,analysis:4,history:5}[page];
     const bs = document.querySelectorAll('.nav-main button');
     if (bs[idx]) bs[idx].classList.add('active');
   }
@@ -434,9 +445,12 @@ async function saveBet() {
   }
 }
 
+const RESULT_CONFIRM_LABEL = { Win: 'Ganhou ✅', Lost: 'Perdeu ❌', Void: 'Void ↩️' };
+
 async function quickResolveLeg(betId, legIndex, result) {
   const b = bets.find(x => x.id === betId);
   if (!b || !b.legs) return;
+  if (!confirm(`Marcar esta seleção como "${RESULT_CONFIRM_LABEL[result]}"?`)) return;
   const newLegs = b.legs.map((l, i) => i === legIndex ? { ...l, result } : l);
   try {
     await dbUpdate(betId, { legs: newLegs, result: comboResult(newLegs) });
@@ -453,6 +467,7 @@ async function deleteBet(docId) {
 }
 
 async function quickResolve(docId, res) {
+  if (!confirm(`Marcar esta aposta como "${RESULT_CONFIRM_LABEL[res]}"?`)) return;
   try { await dbUpdate(docId, { result: res }); snack('✅ Resultado atualizado!'); }
   catch(e) { snack('⚠️ Erro: ' + e.message); }
 }
@@ -1051,6 +1066,102 @@ function snack(msg) {
 document.getElementById('bet-overlay').addEventListener('click',  e => { if (e.target === e.currentTarget) closeModal('bet-overlay'); });
 document.getElementById('unit-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('unit-overlay'); });
 document.getElementById('settings-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('settings-overlay'); });
+document.getElementById('bonus-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('bonus-overlay'); });
+
+// ══════════════════════════════════════════
+// HOME — bónus de registo das casas de apostas
+// ══════════════════════════════════════════
+// Só as casas com bónus de referral confirmado entram aqui — Bwin/Leon ainda
+// não têm código confirmado, por isso ficam de fora até termos a certeza.
+const BONUS_INFO = {
+  betclic: {
+    name: 'Betclic',
+    logo: 'bookmakers/betclic.png',
+    link: 'https://go.onelink.me/w4we/bc997527?af_sub5=RODR4635',
+    value: '10€ em Freebets',
+    tags: ['Depósito ≥5€', 'Validar conta'],
+    steps: [
+      'Entra na Betclic através do link de amigo',
+      'Cria uma conta nova',
+      'Valida a conta',
+      'Faz um depósito mínimo de 5€',
+    ],
+    note: 'A recompensa é atribuída depois da conta validada e do depósito efetuado. Este Código de Amigo é diferente dos bónus de boas-vindas normais da Betclic.',
+  },
+  betano: {
+    name: 'Betano',
+    logo: 'bookmakers/betano.png',
+    link: 'https://referme.to/rodrigoc-5588',
+    value: '50 Rodadas Grátis',
+    tags: ['Depósito ≥10€', '7 dias'],
+    steps: [
+      'Entra na Betano através do link de convite (não é o mesmo que um código promocional normal)',
+      'Cria uma conta nova — nunca podes ter tido conta Betano antes',
+      'Faz o primeiro depósito de pelo menos 10€',
+      'Deposita nos primeiros 7 dias após o registo',
+    ],
+    note: 'Promoção válida até 31 de dezembro de 2026.',
+  },
+  solverde: {
+    name: 'Solverde',
+    logo: 'bookmakers/solverde.png',
+    link: 'https://sol-ver.de/5wrWrx8',
+    value: '20€ (10€ Casino + 10€ Free Bets)',
+    tags: ['Depósito ≥20€', 'Código da Amizade'],
+    steps: [
+      'Entra através do Código da Amizade (link ou QR Code)',
+      'Cria uma conta nova',
+      'Faz um depósito mínimo de 20€',
+      'Joga/aposta no Casino e/ou em Apostas Desportivas',
+    ],
+    note: 'Não confundir com os códigos promocionais públicos da Solverde (ex: 30€ Freebets ou 60 Free Spins) — este é só através do teu Código da Amizade.',
+  },
+  '22bet': {
+    name: '22Bet',
+    logo: 'bookmakers/22bet.png',
+    link: 'https://22luckzone.com?bf=67ae0aa08567f_3355764241',
+    value: '100% do 1º depósito até 122€',
+    tags: ['Depósito ≥1€', 'Rollover 5x'],
+    steps: [
+      'Regista-te no site da 22Bet',
+      'Preenche todos os campos obrigatórios em "A Minha Conta"',
+      'Antes de depositar, seleciona a conta de bónus de apostas desportivas',
+      'Faz um primeiro depósito de pelo menos 1€',
+      'Não escolhas a opção "Eu não quero quaisquer bónus"',
+    ],
+    note: 'O bónus é creditado automaticamente. Para levantar: apostar 5x o valor do bónus, só em acumuladores de 3+ seleções, com pelo menos 3 seleções a odds ≥1.40, em 7 dias. Ex: 122€ de bónus → 610€ em apostas qualificativas.',
+  },
+};
+
+function renderBonusGrid() {
+  const el = document.getElementById('bonus-grid');
+  if (!el) return;
+  el.innerHTML = Object.keys(BONUS_INFO).map(key => {
+    const b = BONUS_INFO[key];
+    return `<div class="bonus-card">
+      <div class="bonus-card-top">
+        <img class="bonus-logo" src="${b.logo}" alt="${esc(b.name)}">
+        <button type="button" class="bonus-info-btn" onclick="openBonusModal('${key}')" title="Como resgatar" aria-label="Como resgatar o bónus da ${esc(b.name)}">?</button>
+      </div>
+      <div class="bonus-label">Bónus de registo</div>
+      <div class="bonus-value">${esc(b.value)}</div>
+      <div class="bonus-tags">${b.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>
+      <a class="bonus-cta" href="${b.link}" target="_blank" rel="sponsored noopener noreferrer">Ativar Bónus</a>
+    </div>`;
+  }).join('');
+}
+
+function openBonusModal(key) {
+  const b = BONUS_INFO[key];
+  if (!b) return;
+  document.getElementById('bonus-modal-title').textContent = b.name;
+  document.getElementById('bonus-modal-value').textContent = 'Bónus: ' + b.value;
+  document.getElementById('bonus-modal-steps').innerHTML = b.steps.map(s => `<li>${esc(s)}</li>`).join('');
+  document.getElementById('bonus-modal-note').textContent = b.note || '';
+  document.getElementById('bonus-overlay').classList.add('open');
+}
+
+renderBonusGrid();
 
 // ══════════════════════════════════════════
 // DEFINIÇÕES — exportar CSV
@@ -1171,7 +1282,7 @@ if (isIosInstallEligible() && !localStorage.getItem('iosInstallHintShown')) {
 }
 
 // Clique numa notificação (#pending/#futures/#history) ou link direto abre já na página certa
-const HASH_PAGES = { '#pending': 1, '#futures': 2, '#history': 4 };
+const HASH_PAGES = { '#pending': 2, '#futures': 3, '#history': 5 };
 if (HASH_PAGES[location.hash] !== undefined) {
   const page = location.hash.slice(1);
   const navBtn = document.querySelectorAll('.nav-main button')[HASH_PAGES[location.hash]];

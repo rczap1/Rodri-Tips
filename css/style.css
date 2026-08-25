@@ -237,6 +237,196 @@ main {
   margin-top: 0.35rem;
 }
 
+/* ── HOME / HERO ── */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem 2.5rem;
+}
+
+.hero-kicker {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.8rem;
+}
+
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 2.1rem;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 0.9rem;
+}
+
+.hero-sub {
+  max-width: 480px;
+  margin: 0 auto 1.6rem;
+  font-size: 0.85rem;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.7rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero-actions a.btn-neutral {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.bookmakers-hint {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.bookmakers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+.bookmaker-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  transition: transform 0.15s;
+}
+
+.bookmaker-card:hover { transform: translateY(-2px); }
+
+.bookmaker-card img {
+  max-width: 100%;
+  max-height: 40px;
+  object-fit: contain;
+}
+
+/* ── BÓNUS DE REGISTO ── */
+.bonus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.bonus-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 12px;
+  padding: 1.1rem;
+  transition: transform 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.bonus-card:hover { transform: translateY(-2px); }
+
+.bonus-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.bonus-logo {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  height: 26px;
+  max-width: 60%;
+  object-fit: contain;
+}
+
+.bonus-info-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted2);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.13s;
+  flex-shrink: 0;
+}
+
+.bonus-info-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.bonus-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+.bonus-value {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--accent);
+  margin-bottom: 0.8rem;
+  line-height: 1.25;
+}
+
+.bonus-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.bonus-tags span {
+  font-size: 0.62rem;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted2);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  padding: 0.15rem 0.55rem;
+}
+
+.bonus-cta {
+  display: block;
+  text-align: center;
+  padding: 0.6rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  margin-top: auto;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.bonus-cta:hover { opacity: 0.85; }
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
 /* ── SPORT TABS ── */
 .sport-tabs {
   display: flex;
@@ -887,4 +1077,6 @@ select option { background: var(--surface2); }
   .nav-main button   { padding: 0.35rem 0.7rem; font-size: 0.78rem; }
   .nav-right         { gap: 0.4rem; }
   .btn-neutral, .btn-add, .unit-display { padding: 0.35rem 0.7rem; font-size: 0.72rem; }
+  .hero              { padding: 2rem 0.5rem 1.75rem; }
+  .hero-title        { font-size: 1.5rem; }
 }

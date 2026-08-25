@@ -41,16 +41,17 @@
   </div>
 
   <div class="nav-main">
-    <button class="active" onclick="goTo('dashboard',this)">Dashboard</button>
+    <button class="active" onclick="goTo('home',this)">Home</button>
+    <button onclick="goTo('dashboard',this)">Dashboard</button>
     <button onclick="goTo('pending',this)">Pendentes</button>
     <button onclick="goTo('futures',this)">Futuras</button>
     <button onclick="goTo('analysis',this)">Análise</button>
     <button onclick="goTo('history',this)">Histórico</button>
-    <button onclick="openSettingsModal()" title="Definições">⚙️</button>
+    <button onclick="openSettingsModal()" title="Definições" aria-label="Definições">⚙️</button>
   </div>
 
   <div class="nav-right">
-    <a class="icon-link" href="https://t.me/rodriitipss" target="_blank" rel="noopener" title="Canal de Telegram">
+    <a class="icon-link" href="https://t.me/rodriitipss" target="_blank" rel="noopener" title="Canal de Telegram" aria-label="Canal de Telegram">
       <img src="telegram-icon-64.png" alt="Telegram" width="20" height="20">
     </a>
     <button class="btn-neutral" id="btn-install" onclick="installApp()" style="display:none">📲 Instalar</button>
@@ -65,9 +66,34 @@
 <main>
 
 <!-- ══════════════════════════════════════
+     HOME
+══════════════════════════════════════ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-kicker">Tracker de apostas</div>
+    <div class="hero-title">Segue as minhas apostas em tempo real</div>
+    <div class="hero-sub">Ténis · Andebol · MMA · Futebol · Basquetebol · NFL</div>
+    <div class="hero-actions">
+      <button class="btn-add" onclick="goTo('dashboard', null)">Ver Dashboard</button>
+      <a class="btn-neutral" href="https://t.me/rodriitipss" target="_blank" rel="noopener">Canal de Telegram</a>
+    </div>
+  </div>
+
+  <div class="sec-header">
+    <div class="sec-title">Onde eu aposto</div>
+    <div class="bookmakers-hint">Links de afiliado</div>
+  </div>
+  <div class="bonus-grid" id="bonus-grid"></div>
+
+  <div class="site-footer">
+    © <span id="footer-year"></span> Rodri Tips. All rights reserved. Gambling can be addictive. Please gamble responsibly. 18+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      DASHBOARD
 ══════════════════════════════════════ -->
-<div class="page active" id="page-dashboard">
+<div class="page" id="page-dashboard">
   <div class="ph">
     <div class="ph-title">Dashboard</div>
     <div class="ph-sub" id="dash-date"></div>
@@ -414,6 +440,22 @@
 
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('settings-overlay')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: COMO RESGATAR O BÓNUS
+══════════════════════════════════════ -->
+<div class="overlay" id="bonus-overlay">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title" id="bonus-modal-title">Bónus</div>
+    <div class="hint" style="font-size:0.75rem;margin-bottom:1.1rem" id="bonus-modal-value"></div>
+    <label style="display:block;margin-bottom:0.5rem">Como resgatar</label>
+    <ol id="bonus-modal-steps" style="margin:0 0 1rem 1.1rem;padding:0;font-size:0.82rem;line-height:1.9;color:var(--text)"></ol>
+    <div class="hint" id="bonus-modal-note"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('bonus-overlay')">Fechar</button>
     </div>
   </div>
 </div>
