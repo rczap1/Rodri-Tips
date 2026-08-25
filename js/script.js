@@ -726,6 +726,20 @@ function setAnalysisTab(sport, btn) {
   btn.classList.add('active');
   const entityTab = document.getElementById('analysis-tab-entity');
   if (entityTab) entityTab.textContent = sport === 'MMA' ? '👤 Lutadores' : '👤 Jogadores';
+
+  // A aba "Equipas" só faz sentido nos desportos de equipa — em Ténis/MMA
+  // (individuais) nem aparece.
+  const teamsTab = document.getElementById('analysis-tab-teams');
+  const hasTeams = SPORT_META[sport].playerTeam;
+  if (teamsTab) {
+    teamsTab.style.display = hasTeams ? '' : 'none';
+    if (!hasTeams && analysisMode === 'teams') {
+      analysisMode = 'entity';
+      document.querySelectorAll('#analysis-subtabs .sub-tab').forEach(b => b.classList.remove('active'));
+      entityTab.classList.add('active');
+    }
+  }
+
   renderAnalysis();
 }
 
@@ -772,115 +786,21 @@ function renderComboAnalysis() {
     </div>`;
 }
 
-function renderAnalysis() {
-  if (analysisMode === 'combos') { renderComboAnalysis(); return; }
-
-  const sportBets = bets.filter(b => b.sport === analysisSport && b.result !== 'Pending' && b.bet_type !== 'combo');
-  let groups = [], title = '', subtitle = '';
-
-  // Helper: check if a label is a market type (not an entity)
-  const isMarketType = (label) => {
-    return /^(Ases|Over|Under|ML|Handicap|KO\/TKO|BTTS|Mercado)$/.test(label);
-  };
-
-  if (analysisMode === 'entity') {
-    // For team sports: prefer player field, otherwise resolve the selected team/player from the bet text.
-    // For individual sports: resolve the selected player from the bet text, or the market when no player is named.
-    const map = {};
-    const meta = SPORT_META[analysisSport];
-
-    const inferEntityLabel = (b) => {
-      const betText = (b.bet || '').toLowerCase();
-
-      if (meta.playerTeam) {
-        if (b.player) return b.pteam ? `${b.player} (${b.pteam})` : b.player;
-
-        const teamCandidates = [b.p1, b.p2].filter(Boolean);
-        for (const team of teamCandidates) {
-          const teamKey = team.split(' ')[0].toLowerCase();
-          if (betText.includes(teamKey) || betText.includes(team.toLowerCase())) return team;
-        }
-
-        if (/\bases\b|\baces?\b/i.test(b.bet || '')) return 'Ases';
-        if (/\bover\b/i.test(b.bet || '')) return 'Over';
-        if (/\bunder\b/i.test(b.bet || '')) return 'Under';
-        if (/\bml\b/i.test(b.bet || '')) return 'ML';
-        if (/handicap/i.test(b.bet || '')) return 'Handicap';
-        if (/ko\/tko|by\s+ko/i.test(b.bet || '')) return 'KO/TKO';
-        return 'Mercado';
-      }
-
-      const playerCandidates = [b.p1, b.p2].filter(Boolean);
-      for (const name of playerCandidates) {
-        const firstToken = name.split(' ')[0].toLowerCase();
-        if (betText.includes(firstToken) || betText.includes(name.toLowerCase())) return name;
-      }
-
-      if (/\bases\b|\baces?\b/i.test(b.bet || '')) return 'Ases';
-      if (/\bover\b/i.test(b.bet || '')) return 'Over';
-      if (/\bunder\b/i.test(b.bet || '')) return 'Under';
-      if (/\bml\b/i.test(b.bet || '')) return 'ML';
-      if (/handicap/i.test(b.bet || '')) return 'Handicap';
-      if (/ko\/tko|by\s+ko/i.test(b.bet || '')) return 'KO/TKO';
-      if (/btts|ambas\s+marcam/i.test(b.bet || '')) return 'BTTS';
-      return 'Mercado';
-    };
-
-    if (meta.playerTeam) {
-      sportBets.forEach(b => {
-        const key = inferEntityLabel(b);
-        if (!map[key]) map[key] = { key, bets: [] };
-        map[key].bets.push(b);
-      });
-    } else {
-      // Tennis / MMA: group by the selected player when mentioned. Skip pure market bets.
-      sportBets.forEach(b => {
-        const key = inferEntityLabel(b);
-        if (!isMarketType(key)) {
-          if (!map[key]) map[key] = { key, bets: [] };
-          map[key].bets.push(b);
-        }
-      });
-    }
-
-    groups   = Object.values(map);
-    // Note: Don't regroup if empty - entity view should show nothing for pure market bets
-    title    = meta.playerTeam ? 'Jogadores & Equipas' : (analysisSport === 'MMA' ? 'Lutadores' : 'Jogadores');
-    subtitle = 'Apostas por entidade';
-
-  } else if (analysisMode === 'market') {
-    groups = groupBy(sportBets, b => {
-      const bt = b.bet || '';
-      if (/\bML\b/i.test(bt))                 return 'ML (Match Winner)';
-      if (/\b1X2\b|home|away|draw/i.test(bt)) return '1X2';
-      if (/BTTS|ambas\s+marcam/i.test(bt))    return 'BTTS';
-      if (/\bases\b|\baces?\b/i.test(bt))     return 'Ases';
-      if (/Over\s*\d/i.test(bt))              return 'Over';
-      if (/Under\s*\d/i.test(bt))             return 'Under';
-      if (/handicap|[+-]\d/i.test(bt))        return 'Handicap';
-      if (/by\s+ko|ko\/tko/i.test(bt))        return 'KO/TKO';
-      if (/marca|golo|scorer/i.test(bt))      return 'Marcador';
-      return 'Outro';
-    });
-    title = 'Tipos de Mercado';
-  } else {
-    groups = groupBy(sportBets, b => b.comp || 'Sem competição');
-    title  = 'Competições';
-  }
-
-  groups.sort((a, b) =>
+function buildAnalysisTable(groups, title, subtitle) {
+  groups = groups.slice().sort((a, b) =>
     b.bets.reduce((s, x) => s + calcNet(x), 0) - a.bets.reduce((s, x) => s + calcNet(x), 0)
   );
   const maxP = Math.max(...groups.map(g => Math.abs(g.bets.reduce((s,x) => s+calcNet(x), 0))), 0.01);
+  const totalBets = groups.reduce((s, g) => s + g.bets.length, 0);
 
-  document.getElementById('analysis-content').innerHTML = `
+  return `
     <div class="analysis-wrap">
       <div class="analysis-header">
         <div>
           <div class="analysis-title">${title} — ${SI[analysisSport]} ${SL[analysisSport]}</div>
           ${subtitle?`<div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">${subtitle}</div>`:''}
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${groups.length} entradas · ${sportBets.length} apostas</div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${groups.length} entradas · ${totalBets} apostas</div>
       </div>
       <table class="analysis-table">
         <thead><tr><th>#</th><th>${title}</th><th>Apostas</th><th>W/L</th><th>Win%</th><th>Odd Méd.</th><th>Units</th><th>Lucro (u)</th><th>Lucro (€)</th><th>ROI</th><th>Tendência</th></tr></thead>
@@ -910,6 +830,124 @@ function renderAnalysis() {
         }</tbody>
       </table>
     </div>`;
+}
+
+function renderAnalysis() {
+  if (analysisMode === 'combos') { renderComboAnalysis(); return; }
+
+  const sportBets = bets.filter(b => b.sport === analysisSport && b.result !== 'Pending' && b.bet_type !== 'combo');
+  let groups = [], title = '', subtitle = '';
+
+  // Helper: check if a label is a market type (not an entity)
+  const isMarketType = (label) => {
+    return /^(Ases|Over|Under|ML|Handicap|KO\/TKO|BTTS|Mercado)$/.test(label);
+  };
+
+  if (analysisMode === 'entity') {
+    const meta = SPORT_META[analysisSport];
+
+    if (meta.playerTeam) {
+      // Desportos de equipa: só as apostas com jogador marcado — as apostas
+      // por equipa ficam na aba "Equipas" (ver analysisMode === 'teams').
+      const map = {};
+      sportBets.forEach(b => {
+        if (!b.player) return;
+        const key = b.pteam ? `${b.player} (${b.pteam})` : b.player;
+        if (!map[key]) map[key] = { key, bets: [] };
+        map[key].bets.push(b);
+      });
+      groups   = Object.values(map);
+      title    = 'Jogadores';
+      subtitle = 'Apostas com jogador marcado';
+    } else {
+      // Ténis / MMA: continuam como sempre.
+      const map = {};
+      sportBets.forEach(b => {
+        const betText = (b.bet || '').toLowerCase();
+        const playerCandidates = [b.p1, b.p2].filter(Boolean);
+        let key = null;
+        for (const name of playerCandidates) {
+          const firstToken = name.split(' ')[0].toLowerCase();
+          if (betText.includes(firstToken) || betText.includes(name.toLowerCase())) { key = name; break; }
+        }
+        if (!key) {
+          if (/\bases\b|\baces?\b/i.test(b.bet || '')) key = 'Ases';
+          else if (/\bover\b/i.test(b.bet || '')) key = 'Over';
+          else if (/\bunder\b/i.test(b.bet || '')) key = 'Under';
+          else if (/\bml\b/i.test(b.bet || '')) key = 'ML';
+          else if (/handicap/i.test(b.bet || '')) key = 'Handicap';
+          else if (/ko\/tko|by\s+ko/i.test(b.bet || '')) key = 'KO/TKO';
+          else if (/btts|ambas\s+marcam/i.test(b.bet || '')) key = 'BTTS';
+          else key = 'Mercado';
+        }
+        if (isMarketType(key)) return;
+        if (!map[key]) map[key] = { key, bets: [] };
+        map[key].bets.push(b);
+      });
+      groups   = Object.values(map);
+      title    = analysisSport === 'MMA' ? 'Lutadores' : 'Jogadores';
+      subtitle = 'Apostas por entidade';
+    }
+
+  } else if (analysisMode === 'teams') {
+    const meta = SPORT_META[analysisSport];
+
+    if (!meta.playerTeam) {
+      document.getElementById('analysis-content').innerHTML = `
+        <div class="analysis-wrap">
+          <div class="analysis-header"><div class="analysis-title">Equipas — ${SI[analysisSport]} ${SL[analysisSport]}</div></div>
+          <div class="empty">Este desporto não tem equipas — só jogadores individuais.</div>
+        </div>`;
+      return;
+    }
+
+    const map = {};
+    sportBets.forEach(b => {
+      if (b.player) return; // já contabilizado na aba "Jogadores"
+      const betText = (b.bet || '').toLowerCase();
+      const teamCandidates = [b.p1, b.p2].filter(Boolean);
+      let key = null;
+      for (const team of teamCandidates) {
+        const teamKey = team.split(' ')[0].toLowerCase();
+        if (betText.includes(teamKey) || betText.includes(team.toLowerCase())) { key = team; break; }
+      }
+      if (!key) {
+        if (/\bover\b/i.test(b.bet || '')) key = 'Over';
+        else if (/\bunder\b/i.test(b.bet || '')) key = 'Under';
+        else if (/\bml\b/i.test(b.bet || '')) key = 'ML';
+        else if (/handicap/i.test(b.bet || '')) key = 'Handicap';
+        else if (/btts|ambas\s+marcam/i.test(b.bet || '')) key = 'BTTS';
+        else key = 'Mercado';
+      }
+      if (!map[key]) map[key] = { key, bets: [] };
+      map[key].bets.push(b);
+    });
+
+    groups   = Object.values(map);
+    title    = 'Equipas';
+    subtitle = 'Apostas por equipa';
+
+  } else if (analysisMode === 'market') {
+    groups = groupBy(sportBets, b => {
+      const bt = b.bet || '';
+      if (/\bML\b/i.test(bt))                 return 'ML (Match Winner)';
+      if (/\b1X2\b|home|away|draw/i.test(bt)) return '1X2';
+      if (/BTTS|ambas\s+marcam/i.test(bt))    return 'BTTS';
+      if (/\bases\b|\baces?\b/i.test(bt))     return 'Ases';
+      if (/Over\s*\d/i.test(bt))              return 'Over';
+      if (/Under\s*\d/i.test(bt))             return 'Under';
+      if (/handicap|[+-]\d/i.test(bt))        return 'Handicap';
+      if (/by\s+ko|ko\/tko/i.test(bt))        return 'KO/TKO';
+      if (/marca|golo|scorer/i.test(bt))      return 'Marcador';
+      return 'Outro';
+    });
+    title = 'Tipos de Mercado';
+  } else {
+    groups = groupBy(sportBets, b => b.comp || 'Sem competição');
+    title  = 'Competições';
+  }
+
+  document.getElementById('analysis-content').innerHTML = buildAnalysisTable(groups, title, subtitle);
 }
 
 function setHistoryTab(sport, btn) {
