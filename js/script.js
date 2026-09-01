@@ -186,7 +186,16 @@ function updateModalForSport(sport) {
 }
 
 // ── COMBINADAS ───────────────────────────────
-function emptyLeg() { return { comp:'', p1:'', p2:'', bet:'', player:'', pteam:'', result:'Pending' }; }
+function emptyLeg() { return { comp:'', p1:'', p2:'', bet:'', odds:'', player:'', pteam:'', result:'Pending' }; }
+
+function updateComboOddsHint() {
+  const el = document.getElementById('combo-odds-hint');
+  if (!el) return;
+  const odds = comboLegs.map(l => parseFloat(l.odds)).filter(o => !isNaN(o) && o >= 1.01);
+  if (odds.length < 2) { el.textContent = ''; return; }
+  const product = odds.reduce((a, b) => a * b, 1);
+  el.textContent = `Produto das odds das seleções: ${product.toFixed(2)}`;
+}
 
 function chooseBetType(type) {
   // "future" não é um bet_type à parte — reaproveita o formulário simples,
@@ -210,7 +219,7 @@ function comboResult(legs) {
   return 'Win';
 }
 
-function updateLeg(i, field, value) { comboLegs[i][field] = value; }
+function updateLeg(i, field, value) { comboLegs[i][field] = value; if (field === 'odds') updateComboOddsHint(); }
 
 function setLegResult(i, v) { comboLegs[i].result = v; renderComboLegs(); }
 
@@ -248,9 +257,15 @@ function renderComboLegs() {
           </div>
         </div>
 
-        <div class="fg full">
-          <label>Aposta / Mercado</label>
-          <input type="text" value="${esc(leg.bet)}" oninput="updateLeg(${i},'bet',this.value)">
+        <div style="display:grid;grid-template-columns:1fr 90px;gap:0.5rem;grid-column:span 2">
+          <div class="fg">
+            <label>Aposta / Mercado</label>
+            <input type="text" value="${esc(leg.bet)}" oninput="updateLeg(${i},'bet',this.value)">
+          </div>
+          <div class="fg">
+            <label>Odd</label>
+            <input type="number" step="0.01" min="1.01" value="${esc(leg.odds)}" oninput="updateLeg(${i},'odds',this.value)">
+          </div>
         </div>
 
         ${meta.playerTeam ? `
@@ -276,6 +291,7 @@ function renderComboLegs() {
         </div>
       </div>
     </div>`).join('');
+  updateComboOddsHint();
 }
 
 // ── MODAL OPEN / CLOSE / SAVE ─────────────────
@@ -385,11 +401,12 @@ async function saveBet() {
     const legs = comboLegs
       .map(l => ({
         comp: l.comp.trim(), p1: l.p1.trim(), p2: l.p2.trim(), bet: l.bet.trim(),
-        player: l.player.trim(), pteam: l.pteam.trim(), result: l.result
+        odds: parseFloat(l.odds), player: l.player.trim(), pteam: l.pteam.trim(), result: l.result
       }))
       .filter(l => l.p1 && l.p2 && l.bet);
 
     if (!legs.length) { snack('⚠️ Adiciona pelo menos uma seleção completa'); return; }
+    if (legs.some(l => isNaN(l.odds) || l.odds < 1.01)) { snack('⚠️ Preenche a odd de cada seleção (mín. 1.01)'); return; }
 
     const obj = {
       date, sport: currentSport, comp: null,
@@ -603,7 +620,7 @@ function pendingCard(b) {
     const legsHtml = (b.legs || []).map((l, i) => `
       <div${i > 0 ? ' style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid var(--border)"' : ''}>
         <div class="pcard-event"${i > 0 ? ' style="padding-right:0"' : ''}>${esc(l.p1)} <span style="color:var(--muted);font-size:0.72rem">vs</span> ${esc(l.p2)}</div>
-        <div class="pcard-bet">${esc(l.bet)}</div>
+        <div class="pcard-bet">${esc(l.bet)}${l.odds ? ` @${(+l.odds).toFixed(2)}` : ''}</div>
         ${l.player ? `<div style="margin-top:0.25rem;font-size:0.68rem;font-family:'DM Mono',monospace;color:var(--muted2)">👤 ${esc(l.player)}${l.pteam?` <span style="color:var(--muted)">(${esc(l.pteam)})</span>`:''}</div>` : ''}
         <div class="pcard-actions" style="margin-top:0.5rem">
           ${window.isAdmin ? `
@@ -751,14 +768,43 @@ function setAnalysisMode(mode, btn) {
 }
 
 function renderComboAnalysis() {
-  const combos = bets.filter(b => b.sport === analysisSport && b.bet_type === 'combo' && b.result !== 'Pending');
+  const allCombos = bets.filter(b => b.sport === analysisSport && b.bet_type === 'combo');
+  const combos    = allCombos.filter(b => b.result !== 'Pending');
+
+  // Estatísticas por seleção (não por bilhete) — ajuda a perceber se o
+  // problema/força está nas seleções em si, sem depender do resultado do
+  // bilhete inteiro (uma seleção pode já estar resolvida num bilhete ainda
+  // Pending, se outra seleção do mesmo bilhete ainda não saiu).
+  const allLegs = [];
+  allCombos.forEach(b => (b.legs || []).forEach(l => allLegs.push(l)));
+  const legsSettled = allLegs.filter(l => l.result === 'Win' || l.result === 'Lost');
+  const legsWon      = legsSettled.filter(l => l.result === 'Win').length;
+  const legWinRate    = legsSettled.length ? (legsWon / legsSettled.length * 100) : 0;
+  const legsWithOdds  = allLegs.map(l => parseFloat(l.odds)).filter(o => !isNaN(o));
+  const avgLegOdd      = legsWithOdds.length ? legsWithOdds.reduce((a,b)=>a+b,0) / legsWithOdds.length : 0;
+
+  // Confrontos mais escolhidos nas combinadas — conta aparições e W/L por
+  // seleção, sem tentar atribuir lucro a cada uma (o lucro só existe ao
+  // nível do bilhete inteiro, não faz sentido dividi-lo por seleção).
+  const confrontoMap = {};
+  allLegs.forEach(l => {
+    if (!l.p1 || !l.p2) return;
+    const key = `${l.p1} vs ${l.p2}`;
+    if (!confrontoMap[key]) confrontoMap[key] = { key, wins: 0, losses: 0, total: 0 };
+    confrontoMap[key].total++;
+    if (l.result === 'Win') confrontoMap[key].wins++;
+    if (l.result === 'Lost') confrontoMap[key].losses++;
+  });
+  const confrontos = Object.values(confrontoMap)
+    .filter(c => c.total > 1)
+    .sort((a, b) => b.total - a.total);
 
   document.getElementById('analysis-content').innerHTML = `
     <div class="analysis-wrap">
       <div class="analysis-header">
         <div>
           <div class="analysis-title">Combinadas — ${SI[analysisSport]} ${SL[analysisSport]}</div>
-          <div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">Desempenho por bilhete (não decomposto por seleção)</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">${allLegs.length} seleções no total · ${legWinRate.toFixed(0)}% de acerto por seleção · odd média por seleção ${avgLegOdd ? avgLegOdd.toFixed(2) : '—'}</div>
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${combos.length} combinadas</div>
       </div>
@@ -770,10 +816,15 @@ function renderComboAnalysis() {
           : combos.slice().sort((a,b) => b.date.localeCompare(a.date)).map(b => {
               const net = calcNet(b);
               const rl  = {Win:'✅ Win',Lost:'❌ Lost',Void:'↩️ Void'}[b.result] || b.result;
-              const legsStr = (b.legs||[]).map(l => `${LEG_ICON[l.result]} ${esc(l.p1)} vs ${esc(l.p2)}`).join('<br>');
+              const legsHtml = (b.legs||[]).map(l => `
+                <div style="display:flex;align-items:center;gap:0.35rem;padding:0.12rem 0">
+                  <span>${LEG_ICON[l.result]}</span>
+                  <span>${esc(l.p1)} <span style="color:var(--muted)">vs</span> ${esc(l.p2)}</span>
+                  ${l.odds ? `<span style="color:var(--muted2);margin-left:auto;padding-left:0.5rem">@${(+l.odds).toFixed(2)}</span>` : ''}
+                </div>`).join('');
               return `<tr>
                 <td class="mono text-muted" style="font-size:0.7rem">${fmtDate(b.date)}</td>
-                <td style="font-size:0.68rem">${legsStr}</td>
+                <td class="mono" style="font-size:0.7rem;min-width:220px">${legsHtml}</td>
                 <td class="mono">${b.odds.toFixed(2)}</td>
                 <td class="mono">${b.units}u</td>
                 <td><span class="rbadge ${b.result}">${rl}</span></td>
@@ -783,6 +834,24 @@ function renderComboAnalysis() {
             }).join('')
         }</tbody>
       </table>
+
+      ${confrontos.length ? `
+      <div class="analysis-header" style="border-top:1px solid var(--border)">
+        <div>
+          <div class="analysis-title">Confrontos repetidos nas combinadas</div>
+          <div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">Contagem por seleção, não por lucro — o lucro só existe ao nível do bilhete inteiro</div>
+        </div>
+      </div>
+      <table class="analysis-table">
+        <thead><tr><th>Confronto</th><th>Vezes</th><th>W/L</th><th>Win%</th></tr></thead>
+        <tbody>${confrontos.map(c => `
+          <tr>
+            <td><div class="entity-name">${esc(c.key)}</div></td>
+            <td class="mono">${c.total}</td>
+            <td class="mono text-muted">${c.wins}W/${c.losses}L</td>
+            <td class="mono">${(c.wins + c.losses) ? (c.wins / (c.wins + c.losses) * 100).toFixed(0) : '—'}%</td>
+          </tr>`).join('')}</tbody>
+      </table>` : ''}
     </div>`;
 }
 
@@ -792,6 +861,7 @@ function buildAnalysisTable(groups, title, subtitle) {
   );
   const maxP = Math.max(...groups.map(g => Math.abs(g.bets.reduce((s,x) => s+calcNet(x), 0))), 0.01);
   const totalBets = groups.reduce((s, g) => s + g.bets.length, 0);
+  const anyFromCombo = groups.some(g => g.bets.some(b => b._fromCombo));
 
   return `
     <div class="analysis-wrap">
@@ -799,6 +869,7 @@ function buildAnalysisTable(groups, title, subtitle) {
         <div>
           <div class="analysis-title">${title} — ${SI[analysisSport]} ${SL[analysisSport]}</div>
           ${subtitle?`<div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">${subtitle}</div>`:''}
+          ${anyFromCombo?`<div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">🧩 = inclui seleções de combinadas — lucro hipotético (units do bilhete à odd da seleção, não dinheiro realmente ganho isoladamente)</div>`:''}
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${groups.length} entradas · ${totalBets} apostas</div>
       </div>
@@ -813,9 +884,10 @@ function buildAnalysisTable(groups, title, subtitle) {
               const avg    = g.bets.length ? g.bets.reduce((s,b)=>s+b.odds,0)/g.bets.length : 0;
               const barW   = Math.min(Math.abs(profit)/maxP*100, 100);
               const barC   = profit >= 0 ? 'var(--win)' : 'var(--loss)';
+              const hasCombo = g.bets.some(b => b._fromCombo);
               return `<tr>
                 <td style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);width:28px">${i+1}</td>
-                <td><div class="entity-name">${esc(g.key)}</div></td>
+                <td><div class="entity-name">${hasCombo?'🧩 ':''}${esc(g.key)}</div></td>
                 <td class="mono">${g.bets.length}</td>
                 <td class="mono text-muted">${st.wins}W/${st.losses}L</td>
                 <td class="mono">${st.wr.toFixed(0)}%</td>
@@ -832,10 +904,35 @@ function buildAnalysisTable(groups, title, subtitle) {
     </div>`;
 }
 
+// Seleções de combinadas como se fossem apostas simples independentes — para
+// que torneios/jogadores/equipas dentro de combinadas também contem para
+// Jogadores/Equipas/Mercados/Competições, não só para a aba "Combinadas".
+// O lucro é hipotético (as mesmas units do bilhete, à odd da própria seleção)
+// porque o dinheiro real só é ganho/perdido ao nível do bilhete inteiro —
+// buildAnalysisTable() avisa disso e marca essas linhas com 🧩.
+function comboLegsAsPseudoBets(sport) {
+  const pseudo = [];
+  bets.filter(b => b.sport === sport && b.bet_type === 'combo').forEach(b => {
+    (b.legs || []).forEach(l => {
+      if (l.result !== 'Win' && l.result !== 'Lost' && l.result !== 'Void') return;
+      const odds = parseFloat(l.odds);
+      if (isNaN(odds)) return;
+      pseudo.push({
+        p1: l.p1, p2: l.p2, bet: l.bet, comp: l.comp, player: l.player, pteam: l.pteam,
+        units: b.units, odds, result: l.result, sport: b.sport, bet_type: 'simple',
+        _fromCombo: true,
+      });
+    });
+  });
+  return pseudo;
+}
+
 function renderAnalysis() {
   if (analysisMode === 'combos') { renderComboAnalysis(); return; }
 
-  const sportBets = bets.filter(b => b.sport === analysisSport && b.result !== 'Pending' && b.bet_type !== 'combo');
+  const sportBets = bets
+    .filter(b => b.sport === analysisSport && b.result !== 'Pending' && b.bet_type !== 'combo')
+    .concat(comboLegsAsPseudoBets(analysisSport));
   let groups = [], title = '', subtitle = '';
 
   // Helper: check if a label is a market type (not an entity)
@@ -1214,24 +1311,37 @@ function csvEscape(v) {
 }
 
 function exportCSV() {
-  const headers = ['Data','Desporto','Tipo','Confronto/Seleções','Aposta/Mercado','Competição','Jogador','Equipa do Jogador','Casa de Apostas','Units','Odd','Resultado','Lucro (u)','Lucro (€)'];
+  // "Jogador/Equipa 1" e "2" são sempre a mesma coisa que p1/p2 no site —
+  // Jogador 1/2 no Ténis, Lutador 1/2 no MMA, Equipa Casa/Fora nos desportos
+  // de equipa. Em colunas separadas (em vez de "X vs Y" numa célula só) dá
+  // para filtrar/analisar por jogador ou equipa individualmente no Excel.
+  const headers = ['Data','Desporto','Tipo','Jogador/Equipa 1','Jogador/Equipa 2','Aposta/Mercado','Competição','Jogador','Equipa do Jogador','Casa de Apostas','Units','Odd','Resultado','Lucro (u)','Lucro (€)'];
 
   const rows = [...bets].sort((a, b) => a.date.localeCompare(b.date)).map(b => {
     const isCombo = b.bet_type === 'combo';
     const net = calcNet(b);
-    const confronto = isCombo
-      ? `Combinada (${(b.legs || []).length}x)`
-      : b.is_future
-        ? 'Futura'
-        : (b.p1 && b.p2 ? `${b.p1} vs ${b.p2}` : (b.event || ''));
+    const tipo = isCombo ? 'Combinada' : (b.is_future ? 'Futura' : 'Simples');
+
+    // Combinada: cada seleção tem o seu próprio par — junta-os por posição
+    // (1ª entidade de cada seleção na coluna 1, 2ª na coluna 2). Futura: não
+    // há confronto, ficam vazias.
+    let ent1 = '', ent2 = '';
+    if (isCombo) {
+      ent1 = (b.legs || []).map(l => l.p1).filter(Boolean).join(' + ');
+      ent2 = (b.legs || []).map(l => l.p2).filter(Boolean).join(' + ');
+    } else if (!b.is_future) {
+      ent1 = b.p1 || '';
+      ent2 = b.p2 || '';
+    }
+
     const legBets  = isCombo ? (b.legs || []).map(l => l.bet).filter(Boolean) : [];
     const legComps = isCombo ? [...new Set((b.legs || []).map(l => l.comp).filter(Boolean))] : [];
     const apostaCell = isCombo ? legBets.join(' + ') : (b.bet || '');
     const compCell    = isCombo ? (legComps.length > 1 ? 'Vários' : (legComps[0] || '')) : (b.comp || '');
 
     return [
-      b.date, SL[b.sport] || b.sport, isCombo ? 'Combinada' : 'Simples',
-      confronto, apostaCell, compCell,
+      b.date, SL[b.sport] || b.sport, tipo,
+      ent1, ent2, apostaCell, compCell,
       isCombo ? '' : (b.player || ''), isCombo ? '' : (b.pteam || ''),
       b.bookmaker || '', b.units, b.odds, b.result,
       b.result === 'Pending' ? '' : net.toFixed(2),
@@ -1256,9 +1366,49 @@ function exportCSV() {
 }
 
 function exportJSON() {
-  // Backup fiel — inclui tudo, incluindo as legs completas das combinadas
-  // (o CSV resume isso numa só célula, este ficheiro guarda a estrutura toda).
-  const json = JSON.stringify(bets, null, 2);
+  // Mesmos nomes de campo legíveis do CSV (Jogador/Equipa 1 e 2 em vez de
+  // p1/p2) — mas aqui cada seleção de uma combinada fica com o detalhe
+  // completo em "Seleções", em vez de resumida numa célula só.
+  const data = [...bets].sort((a, b) => a.date.localeCompare(b.date)).map(b => {
+    const isCombo = b.bet_type === 'combo';
+    const net = calcNet(b);
+    const tipo = isCombo ? 'Combinada' : (b.is_future ? 'Futura' : 'Simples');
+
+    const obj = {
+      'Data': b.date,
+      'Desporto': SL[b.sport] || b.sport,
+      'Tipo': tipo,
+      'Jogador/Equipa 1': isCombo || b.is_future ? '' : (b.p1 || ''),
+      'Jogador/Equipa 2': isCombo || b.is_future ? '' : (b.p2 || ''),
+      'Aposta/Mercado': isCombo ? '' : (b.bet || ''),
+      'Competição': isCombo ? '' : (b.comp || ''),
+      'Jogador': isCombo ? '' : (b.player || ''),
+      'Equipa do Jogador': isCombo ? '' : (b.pteam || ''),
+      'Casa de Apostas': b.bookmaker || '',
+      'Units': b.units,
+      'Odd': b.odds,
+      'Resultado': b.result,
+      'Lucro (u)': b.result === 'Pending' ? null : +net.toFixed(2),
+      'Lucro (€)': b.result === 'Pending' ? null : +(net * unitVal).toFixed(2),
+    };
+    if (b.is_future && b.expected_result_date) obj['Data prevista do resultado'] = b.expected_result_date;
+    if (isCombo) {
+      obj['Odd Total'] = b.odds;
+      obj['Seleções'] = (b.legs || []).map(l => ({
+        'Jogador/Equipa 1': l.p1 || '',
+        'Jogador/Equipa 2': l.p2 || '',
+        'Aposta/Mercado': l.bet || '',
+        'Odd': l.odds ?? null,
+        'Competição': l.comp || '',
+        'Jogador': l.player || '',
+        'Equipa do Jogador': l.pteam || '',
+        'Resultado': l.result,
+      }));
+    }
+    return obj;
+  });
+
+  const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
