@@ -491,7 +491,10 @@ async function quickResolve(docId, res) {
 
 // ── CALCS ────────────────────────────────────
 function calcNet(b) {
-  if (b.result === 'Win')  return +((b.units * b.odds) - b.units).toFixed(4);
+  // b.odds pode faltar em seleções antigas de combinadas (o campo é novo) —
+  // sem odd não dá para saber o lucro de um Win, por isso conta como 0 em
+  // vez de rebentar em NaN. Não afeta apostas reais, que têm sempre odd.
+  if (b.result === 'Win')  return b.odds ? +((b.units * b.odds) - b.units).toFixed(4) : 0;
   if (b.result === 'Lost') return -b.units;
   return 0;
 }
@@ -501,13 +504,15 @@ function getStats(arr) {
   const wins     = closed.filter(b => b.result === 'Win').length;
   const losses   = closed.filter(b => b.result === 'Lost').length;
   const voids    = closed.filter(b => b.result === 'Void').length;
-  const bettable = closed.filter(b => b.result !== 'Void');
+  // Só entram nos números de dinheiro (units/lucro/ROI/odd média) apostas
+  // com odd conhecida — sem isso o W/L continua a contar, mas o valor fica
+  // de fora em vez de distorcer as contas com um lucro a 0 fingido.
+  const bettable = closed.filter(b => b.result !== 'Void' && b.odds);
   const unitsOut = bettable.reduce((s, b) => s + b.units, 0);
   const profit   = bettable.reduce((s, b) => s + calcNet(b), 0);
   const roi      = unitsOut > 0 ? profit / unitsOut * 100 : 0;
   const wr       = (wins + losses) > 0 ? wins / (wins + losses) * 100 : 0;
-  const settled  = closed.filter(b => b.result !== 'Void');
-  const avgOdd   = settled.length ? settled.reduce((s, b) => s + b.odds, 0) / settled.length : 0;
+  const avgOdd   = bettable.length ? bettable.reduce((s, b) => s + b.odds, 0) / bettable.length : 0;
   return { wins, losses, voids, unitsOut, profit, roi, wr, avgOdd };
 }
 
@@ -856,10 +861,13 @@ function renderComboAnalysis() {
 }
 
 function buildAnalysisTable(groups, title, subtitle) {
-  groups = groups.slice().sort((a, b) =>
-    b.bets.reduce((s, x) => s + calcNet(x), 0) - a.bets.reduce((s, x) => s + calcNet(x), 0)
-  );
-  const maxP = Math.max(...groups.map(g => Math.abs(g.bets.reduce((s,x) => s+calcNet(x), 0))), 0.01);
+  // getStats() calculado uma vez por grupo e reutilizado em tudo (ordenação,
+  // maxP da barra, linhas) — assim o lucro que ordena é sempre o mesmo que
+  // aparece na tabela, mesmo com seleções de combinadas sem odd (que contam
+  // para o W/L mas ficam fora dos números de dinheiro).
+  groups = groups.map(g => ({ ...g, _st: getStats(g.bets) }))
+    .sort((a, b) => b._st.profit - a._st.profit);
+  const maxP = Math.max(...groups.map(g => Math.abs(g._st.profit)), 0.01);
   const totalBets = groups.reduce((s, g) => s + g.bets.length, 0);
   const anyFromCombo = groups.some(g => g.bets.some(b => b._fromCombo));
 
@@ -869,7 +877,7 @@ function buildAnalysisTable(groups, title, subtitle) {
         <div>
           <div class="analysis-title">${title} — ${SI[analysisSport]} ${SL[analysisSport]}</div>
           ${subtitle?`<div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">${subtitle}</div>`:''}
-          ${anyFromCombo?`<div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">🧩 = inclui seleções de combinadas — lucro hipotético (units do bilhete à odd da seleção, não dinheiro realmente ganho isoladamente)</div>`:''}
+          ${anyFromCombo?`<div style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.2rem">Inclui seleções de combinadas — lucro hipotético (a unidade do bilhete dividida pelas seleções, à odd de cada uma; não é dinheiro realmente ganho isoladamente)</div>`:''}
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${groups.length} entradas · ${totalBets} apostas</div>
       </div>
@@ -878,20 +886,19 @@ function buildAnalysisTable(groups, title, subtitle) {
         <tbody>${!groups.length
           ? `<tr><td colspan="11"><div class="empty">Sem dados ainda.<br>Regista as tuas primeiras apostas!</div></td></tr>`
           : groups.map((g,i) => {
-              const profit = g.bets.reduce((s,x) => s+calcNet(x), 0);
-              const st     = getStats(g.bets);
-              const roi    = st.unitsOut > 0 ? profit/st.unitsOut*100 : 0;
-              const avg    = g.bets.length ? g.bets.reduce((s,b)=>s+b.odds,0)/g.bets.length : 0;
+              const st     = g._st;
+              const profit = st.profit;
+              const roi    = st.roi;
+              const avg    = st.avgOdd;
               const barW   = Math.min(Math.abs(profit)/maxP*100, 100);
               const barC   = profit >= 0 ? 'var(--win)' : 'var(--loss)';
-              const hasCombo = g.bets.some(b => b._fromCombo);
               return `<tr>
                 <td style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);width:28px">${i+1}</td>
-                <td><div class="entity-name">${hasCombo?'🧩 ':''}${esc(g.key)}</div></td>
+                <td><div class="entity-name">${esc(g.key)}</div></td>
                 <td class="mono">${g.bets.length}</td>
                 <td class="mono text-muted">${st.wins}W/${st.losses}L</td>
                 <td class="mono">${st.wr.toFixed(0)}%</td>
-                <td class="mono">${avg.toFixed(2)}</td>
+                <td class="mono">${avg > 0 ? avg.toFixed(2) : '—'}</td>
                 <td class="mono">${st.unitsOut.toFixed(1)}u</td>
                 <td class="mono ${profit>=0?'text-green':'text-red'}">${profit>=0?'+':''}${profit.toFixed(2)}u</td>
                 <td class="mono ${profit>=0?'text-green':'text-red'}">${(profit*unitVal>=0?'+':'')+(profit*unitVal).toFixed(2)}€</td>
@@ -907,20 +914,26 @@ function buildAnalysisTable(groups, title, subtitle) {
 // Seleções de combinadas como se fossem apostas simples independentes — para
 // que torneios/jogadores/equipas dentro de combinadas também contem para
 // Jogadores/Equipas/Mercados/Competições, não só para a aba "Combinadas".
-// O lucro é hipotético (as mesmas units do bilhete, à odd da própria seleção)
-// porque o dinheiro real só é ganho/perdido ao nível do bilhete inteiro —
-// buildAnalysisTable() avisa disso e marca essas linhas com 🧩.
+// O lucro é hipotético (a unidade do bilhete dividida pelas seleções, à odd
+// da própria seleção) porque o dinheiro real só é ganho/perdido ao nível do
+// bilhete inteiro — buildAnalysisTable() avisa disso no cabeçalho da tabela.
 function comboLegsAsPseudoBets(sport) {
   const pseudo = [];
   bets.filter(b => b.sport === sport && b.bet_type === 'combo').forEach(b => {
+    const numLegs = (b.legs || []).length || 1;
+    // A unidade da múltipla é uma só, a dividir por todas as seleções — não
+    // "1u por seleção" (isso multiplicaria a units apostada real).
+    const legUnits = b.units / numLegs;
     (b.legs || []).forEach(l => {
       if (l.result !== 'Win' && l.result !== 'Lost' && l.result !== 'Void') return;
-      const odds = parseFloat(l.odds);
-      if (isNaN(odds)) return;
+      // Seleções antigas não têm odd guardada (campo novo) — continuam a
+      // contar para o record W/L, só ficam de fora dos números de dinheiro
+      // (ver o filtro em getStats/buildAnalysisTable).
+      const parsedOdds = parseFloat(l.odds);
       pseudo.push({
         p1: l.p1, p2: l.p2, bet: l.bet, comp: l.comp, player: l.player, pteam: l.pteam,
-        units: b.units, odds, result: l.result, sport: b.sport, bet_type: 'simple',
-        _fromCombo: true,
+        units: legUnits, odds: isNaN(parsedOdds) ? null : parsedOdds, result: l.result,
+        sport: b.sport, bet_type: 'simple', _fromCombo: true,
       });
     });
   });
